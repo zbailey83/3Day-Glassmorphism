@@ -1,3 +1,4 @@
+
 export interface QuizQuestion {
     id: string;
     question: string;
@@ -9,8 +10,8 @@ export interface QuizQuestion {
 export interface Module {
     id: string;
     title: string;
-    duration: string; // e.g. "15 min"
-    content: string; // Markdown-like or text
+    duration: string;
+    content: string;
     type: 'video' | 'reading' | 'lab';
     quiz?: QuizQuestion[];
 }
@@ -18,17 +19,20 @@ export interface Module {
 export interface Course {
     id: string;
     title: string;
+    subtitle: string;
     description: string;
     tags: string[];
     thumbnail: string;
     modules: Module[];
 }
 
-export interface GeneratedCampaign {
-    script: string;
-    socialPosts: {
-        platform: string;
-        content: string;
-    }[];
-    seoKeywords: string[];
+export interface ProjectSpec {
+    prd: string;
+    featureList: string[];
+    userFlows: string[];
+    styleGuide: {
+        fonts: string;
+        colors: string;
+        vibe: string;
+    };
 }

@@ -1,4 +1,5 @@
-import { GoogleGenAI } from "@google/genai";
+
+import { GoogleGenAI, Type } from "@google/genai";
 import { GEMINI_TEXT_MODEL, GEMINI_IMAGE_MODEL } from "../constants";
 
 const getClient = () => {
@@ -9,26 +10,25 @@ const getClient = () => {
   return new GoogleGenAI({ apiKey });
 };
 
-export const generateCampaignContent = async (
-  brandName: string,
-  productDesc: string,
-  targetAudience: string
+export const generateProjectSpec = async (
+  brainDump: string,
+  targetStack: string
 ) => {
   const client = getClient();
   
   const prompt = `
-    Act as a senior digital marketing strategist.
-    Brand: ${brandName}
-    Product: ${productDesc}
-    Target Audience: ${targetAudience}
+    Act as a World-Class Senior Systems Architect and Engineering Manager.
+    Brain Dump: ${brainDump}
+    Target Tech Stack: ${targetStack}
 
-    Generate a mini-marketing campaign in STRICT JSON format with the following fields:
-    - "script": A 30-second video script with visual cues and narration.
-    - "social_posts": An array of 3 objects with "platform" (e.g., LinkedIn, Instagram, Twitter) and "content" (the post text).
-    - "seo_keywords": An array of 10 high-value semantic keywords.
-    - "image_prompt_suggestion": A descriptive prompt to generate an image for this campaign.
+    Transform this messy brain dump into a production-grade software specification in STRICT JSON format:
+    - "prd": A comprehensive Product Requirements Document in markdown.
+    - "featureList": An array of specific, atomic features to build.
+    - "userFlows": An array describing the key user journeys.
+    - "styleGuide": An object with "fonts", "colors" (hex codes), and "vibe" (descriptive theme).
+    - "ai_instructions": A specific set of instructions to copy-paste into an AI Coding Agent's .cursorrules file.
 
-    Do not use markdown formatting for the JSON. Just return the raw JSON string.
+    Return ONLY raw JSON.
   `;
 
   const response = await client.models.generateContent({
@@ -39,9 +39,12 @@ export const generateCampaignContent = async (
     }
   });
 
-  return response.text;
+  // Ensure we return a string to avoid breakage in components
+  return response.text || "";
 };
 
+// Fix: Renamed generateVisualMockup to generateImage to match the expected export in ImageGenLab.tsx.
+// Removed the restrictive UI/UX prefix to allow users to experiment with various styles in the Lab.
 export const generateImage = async (prompt: string) => {
   const client = getClient();
   
@@ -50,9 +53,13 @@ export const generateImage = async (prompt: string) => {
     contents: {
       parts: [{ text: prompt }]
     },
+    config: {
+      imageConfig: {
+        aspectRatio: "16:9"
+      }
+    }
   });
 
-  // Extract base64 data
   const parts = response.candidates?.[0]?.content?.parts;
   if (parts) {
     for (const part of parts) {
@@ -65,18 +72,19 @@ export const generateImage = async (prompt: string) => {
   throw new Error("No image generated");
 };
 
-export const analyzeSeoText = async (text: string) => {
+export const auditLogicCode = async (codeSnippet: string) => {
   const client = getClient();
   
   const prompt = `
-    Analyze the following marketing copy for SEO:
-    "${text}"
+    Act as a Security Auditor and Senior Backend Engineer. 
+    Review the following code or logic description for security vulnerabilities, edge cases, and architectural flaws:
+    "${codeSnippet}"
 
     Return a JSON object with:
-    - "score": number (1-100)
-    - "sentiment": string (Positive, Neutral, Negative)
-    - "keywords_detected": array of strings
-    - "improvements": array of strings (suggestions to improve SEO/readability)
+    - "securityScore": number (1-100)
+    - "vulnerabilities": array of strings
+    - "edgeCases": array of strings (e.g., 'What happens if user loses connection?')
+    - "refactorSuggestions": array of strings
   `;
 
   const response = await client.models.generateContent({
@@ -87,5 +95,6 @@ export const analyzeSeoText = async (text: string) => {
     }
   });
 
-  return response.text;
+  // Ensure we return a string to avoid breakage in components
+  return response.text || "";
 };

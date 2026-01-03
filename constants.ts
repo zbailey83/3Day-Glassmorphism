@@ -1,121 +1,101 @@
+
 import { Course } from './types';
 
-export const GEMINI_TEXT_MODEL = 'gemini-2.5-flash';
+export const GEMINI_TEXT_MODEL = 'gemini-3-pro-preview';
 export const GEMINI_IMAGE_MODEL = 'gemini-2.5-flash-image';
 
 export const COURSES: Course[] = [
   {
-    id: 'marketing-ai-101',
-    title: 'AI-Powered Scripts, Visuals & SEO',
-    description: 'Learn to produce complete ad campaigns using AI tools. Covers video scripting, social copy, and SEO package generation.',
-    tags: ['Marketing AI', 'Content Gen', 'SEO'],
-    thumbnail: 'https://picsum.photos/400/220?random=1',
+    id: 'vibe-coding-2026',
+    title: 'The 2026 Vibe Coding Masterclass',
+    subtitle: 'Ship Production-Grade Software Without Writing Syntax',
+    description: 'Master the art of directing AI agents (Cursor, Claude, Gemini) to build, deploy, and scale web applications using the Vibe methodology.',
+    tags: ['AI Engineering', 'Vibe Coding', 'No-Code/Directing'],
+    thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=800&auto=format&fit=crop',
     modules: [
       {
-        id: 'm1-writing',
-        title: 'AI Writing for Campaigns',
-        duration: '20 min',
+        id: 'm1-foundation',
+        title: 'The Foundation & The Stack',
+        duration: '25 min',
         type: 'reading',
         content: `
-### Mastering AI Copywriting
-AI models like Gemini and GPT-4 excel at generating high-volume, high-quality text assets. In this module, we explore how to craft prompts that yield:
+### The Vibe Shift
+Moving from manual syntax entry to high-level systems architecture and direction. Understanding the role of the "AI Coding Agent" vs. the "Human Director."
 
-1.  **Catchy Headlines:** Using psychological triggers in prompts.
-2.  **Email Sequences:** Creating drip campaigns that nurture leads.
-3.  **Social Content:** Adapting tone for LinkedIn vs. Instagram.
+### The 4-Pillar Stack
+1. **Cursor:** The AI-native editor (The Engine).
+2. **Supabase:** Backend, Auth, and Database (The Brain).
+3. **GitHub:** Version Control (The Save File).
+4. **Vercel:** Deployment (The Stage).
 
-**Key Insight:** The quality of output depends entirely on the specificity of your "System Instruction" or context provided in the prompt.
+### The "Context Window" Strategy
+Understanding tokens, context windows (Claude vs. Gemini), and why "more context" isn't always better.
         `,
         quiz: [
           {
-            id: 'q1',
-            question: 'What is the most critical factor in getting high-quality text from AI?',
-            options: ['Using the most expensive model', 'Providing specific context and instructions', 'Keeping the prompt as short as possible', 'Only using it for headlines'],
+            id: 'v1-q1',
+            question: 'What is the core role of a human in Vibe Coding?',
+            options: ['Writing every line of CSS', 'High-level systems architecture and direction', 'Manually debugging semicolon errors', 'Running npm install repeatedly'],
             correctAnswer: 1,
-            explanation: 'Context and specificity (Prompt Engineering) are the biggest determinants of quality.'
+            explanation: 'In Vibe Coding, the human acts as a Director/Architect while AI agents handle the syntax.'
           }
         ]
       },
       {
-        id: 'm2-visuals',
-        title: 'Visual Asset Creation',
-        duration: '30 min',
+        id: 'm2-architect',
+        title: 'The Architect’s Workflow',
+        duration: '45 min',
         type: 'lab',
         content: `
-### Stopping the Scroll with AI Visuals
-Visual models translate text descriptions into pixels. 
+### Spec Mode Workflow
+Translate a "shower thought" into a rigorous technical specification. 
 
-*   **Subjects:** Be specific about the main focal point.
-*   **Style:** Define the artistic medium (e.g., "Cyberpunk photorealistic", "Oil painting").
-*   **Composition:** Use camera terms (e.g., "Wide angle", "Bokeh", "Macro").
+*   **The Brain Dump Protocol:** Using voice dictation to record stream-of-consciousness ideas.
+*   **Visual Context Injection:** Programming with sketches and screenshots.
+*   **The Senior EM Prompt:** Forcing the AI to "interview" you before writing code.
 
-*Interactive Lab available in the Tools section.*
+*Interactive Lab: Use the Project Spec Architect tool.*
         `
       },
       {
-        id: 'm3-seo',
-        title: 'AI for SEO & Performance',
-        duration: '25 min',
-        type: 'reading',
+        id: 'm3-execution',
+        title: 'Execution, Refactoring & Shipping',
+        duration: '50 min',
+        type: 'lab',
         content: `
-### Semantic Keywords & Snippets
-AI can analyze your content and suggest:
-*   **LSI Keywords:** Latent Semantic Indexing terms to help search engines understand context.
-*   **Featured Snippets:** Structuring answers to common questions to appear at position zero.
-*   **A/B Testing:** Generating 10 variations of a meta description to test CTR.
-        `,
-        quiz: [
-            {
-                id: 'q3',
-                question: 'How can AI assist with Featured Snippets?',
-                options: ['It hacks Google servers', 'It structures answers concisely to match common query formats', 'It automatically clicks your links', 'It removes all competitors'],
-                correctAnswer: 1,
-                explanation: 'AI is excellent at summarizing complex topics into concise paragraphs or lists favored by search algorithms.'
-            }
-        ]
+### Cursor Composer Mastery
+How to use "Plan Mode" vs. "Normal Mode." When to use @files to pin documentation for context.
+
+### Model Selection Strategy
+*   **Planning/Architecture:** Use Claude 3.7 Opus (High intelligence).
+*   **Refactoring/Deep Logic:** Use OpenAI o1/o3-mini.
+*   **Small UI Tweaks:** Use Gemini 2.5 Flash (Fast, cheap).
+
+### The ELI5 Loop
+Prevent code bloat by keeping files under 200 lines and using "Critique Yourself" prompts.
+        `
       }
     ]
   },
   {
-    id: 'image-gen-fundamentals',
-    title: 'Image Generation Fundamentals',
-    description: 'Foundational course on diffusion models, text encoders, and the ethics of AI art.',
-    tags: ['Diffusion', 'Visual Prompting', 'AI Art'],
-    thumbnail: 'https://picsum.photos/400/220?random=2',
+    id: 'vibe-mindset',
+    title: 'The Vibe Mindset',
+    subtitle: 'Stay Focused in a Sea of AI Noise',
+    description: 'Bonus material on Documentation-Driven Development (DDD) and managing project scope.',
+    tags: ['Mindset', 'Product Management', 'DDD'],
+    thumbnail: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=800&auto=format&fit=crop',
     modules: [
       {
-        id: 'img-1-diffusion',
-        title: 'Diffusion Model Concepts',
-        duration: '15 min',
-        type: 'video',
+        id: 'mindset-1',
+        title: 'Documentation-Driven Development',
+        duration: '20 min',
+        type: 'reading',
         content: `
-### From Noise to Art
-Diffusion models work by:
-1.  **Training:** Adding noise (static) to an image until it is unrecognizable.
-2.  **Generation:** The model learns to reverse this process, predicting the "less noisy" version of a random pattern step-by-step, guided by your text prompt.
+### The Idea Parking Lot
+How to resist the urge to add "Dark Mode" in the middle of building the database. Using backlog.md to stay focused.
 
-**The Text Encoder:** Models use transformers (like CLIP or T5) to convert your text into mathematical embeddings that guide the noise removal process.
-        `,
-        quiz: [
-            {
-                id: 'diff-1',
-                question: 'What is the core process of a diffusion model?',
-                options: ['Collaging existing photos', 'Iteratively removing noise from a random pattern', 'Drawing pixel by pixel like a human', 'Searching Google Images'],
-                correctAnswer: 1,
-                explanation: 'Diffusion models start with random noise and iteratively refine it into a coherent image.'
-            }
-        ]
-      },
-      {
-        id: 'img-2-prompting',
-        title: 'Prompt Crafting for Visuals',
-        duration: '45 min',
-        type: 'lab',
-        content: `
-### The Art of the Prompt
-*   **Adjectives matter:** "Gloomy" vs "Vibrant" changes the entire color palette.
-*   **Negative Prompts:** Telling the model what *not* to include (e.g., "blur", "distortion", "extra fingers").
-*   **Weighting:** Some tools allow you to emphasize specific words (e.g., (ocean:1.5)).
+### Brains on Disk
+Why updating your .md files (instructions.md, style.md) is more important than updating your code. Your documentation is the AI's "Source of Truth."
         `
       }
     ]

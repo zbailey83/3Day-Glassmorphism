@@ -1,5 +1,7 @@
 {
-  "name": "3DayCourse-Refined Glassmorphism",
-  "description": "An interactive e-learning platform for AI-powered digital marketing, featuring real-time campaign generation, visual prompt engineering labs, and SEO analysis tools powered by Gemini.",
-  "requestFramePermissions": []
+  "name": "VibeCoding 2026 Masterclass",
+  "description": "Master the art of directing AI agents to build production-grade software. Features Spec Architects, Visual Logic Labs, and AI Code Auditing tools.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }
