@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Sparkles, ArrowRight, Zap, Shield, Globe } from 'lucide-react';
+import { AuthModal } from './modals/AuthModal';
 
 export const SplashPage: React.FC = () => {
-    const { signInWithGoogle, error } = useAuth();
+    const { user } = useAuth();
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
     return (
         <div className="min-h-screen bg-[#020712] relative overflow-hidden flex flex-col items-center justify-center font-sans text-white selection:bg-[#38BDF8] selection:text-[#020712]">
@@ -39,16 +41,10 @@ export const SplashPage: React.FC = () => {
                     Join the elite developer community building the future. Experience a gamified learning platform powered by real-time AI agents.
                 </p>
 
-                {error && (
-                    <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 max-w-md mx-auto animate-fade-in flex items-center justify-center">
-                        <span className="mr-2">⚠️</span> {error}
-                    </div>
-                )}
-
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
                     <button
-                        onClick={signInWithGoogle}
+                        onClick={() => setIsAuthModalOpen(true)}
                         className="group relative px-8 py-4 bg-white text-[#020712] rounded-full font-bold text-lg transition-all hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_rgba(255,255,255,0.5)]"
                     >
                         <span className="flex items-center">
@@ -90,6 +86,8 @@ export const SplashPage: React.FC = () => {
                 </div>
 
             </div>
+
+            <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
         </div>
     );
 };

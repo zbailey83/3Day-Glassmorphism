@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import {
+    User,
+    signInWithPopup,
+    signOut,
+    onAuthStateChanged,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    AuthError
+} from 'firebase/auth';
 import { auth, googleProvider, syncUserProfile } from '../services/firebase';
 import { UserProfile } from '../types';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -11,7 +19,10 @@ interface AuthContextType {
     loading: boolean;
     error: string | null;
     signInWithGoogle: () => Promise<void>;
+    signupWithEmail: (email: string, pass: string) => Promise<void>;
+    loginWithEmail: (email: string, pass: string) => Promise<void>;
     logout: () => Promise<void>;
+    setError: (error: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -54,23 +65,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => unsubscribe();
     }, []);
 
+    const handleAuthError = (err: any) => {
+        console.error("Auth error:", err);
+        let errorMessage = "Authentication failed";
+        if (err.code === 'auth/popup-closed-by-user') {
+            errorMessage = "Sign-in cancelled";
+        } else if (err.code === 'auth/email-already-in-use') {
+            errorMessage = "Email already in use";
+        } else if (err.code === 'auth/invalid-email') {
+            errorMessage = "Invalid email address";
+        } else if (err.code === 'auth/weak-password') {
+            errorMessage = "Password should be at least 6 characters";
+        } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+            errorMessage = "Invalid email or password";
+        } else {
+            errorMessage = err.message || "An unexpected error occurred";
+        }
+        setError(errorMessage);
+    };
+
     const signInWithGoogle = async () => {
         setError(null);
         try {
             await signInWithPopup(auth, googleProvider);
         } catch (err: any) {
-            console.error("Error signing in with Google", err);
-            let errorMessage = "Failed to sign in";
-            if (err.code === 'auth/popup-closed-by-user') {
-                errorMessage = "Sign-in cancelled";
-            } else if (err.code === 'auth/configuration-not-found') {
-                errorMessage = "Authentication not enabled in Firebase Console";
-            } else if (err.code === 'auth/unauthorized-domain') {
-                errorMessage = "Domain not authorized in Firebase Console";
-            } else {
-                errorMessage = err.message || "An unexpected error occurred";
-            }
-            setError(errorMessage);
+            handleAuthError(err);
+        }
+    };
+
+    const signupWithEmail = async (email: string, pass: string) => {
+        setError(null);
+        try {
+            await createUserWithEmailAndPassword(auth, email, pass);
+        } catch (err: any) {
+            handleAuthError(err);
+            throw err; // Re-throw to allow component to handle specific UI logic if needed
+        }
+    };
+
+    const loginWithEmail = async (email: string, pass: string) => {
+        setError(null);
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+        } catch (err: any) {
+            handleAuthError(err);
+            throw err;
         }
     };
 
@@ -84,7 +123,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, userProfile, loading, error, signInWithGoogle, logout }}>
+        <AuthContext.Provider value={{
+            user,
+            userProfile,
+            loading,
+            error,
+            signInWithGoogle,
+            signupWithEmail,
+            loginWithEmail,
+            logout,
+            setError
+        }}>
             {children}
         </AuthContext.Provider>
     );
