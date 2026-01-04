@@ -8,14 +8,21 @@ import { SeoAnalyzer } from './components/tools/SeoAnalyzer';
 import { Course, Module } from './types';
 import { COURSES } from './constants';
 import { Menu, X } from 'lucide-react';
+import { useAuth } from './contexts/AuthContext';
+
+import { SplashPage } from './components/SplashPage';
+import { ProfilePage } from './components/ProfilePage';
+import { Loader2 } from 'lucide-react';
 
 // Simple view router state type
-export type ViewState = 
+export type ViewState =
   | { type: 'dashboard' }
   | { type: 'course'; courseId: string; moduleId?: string }
-  | { type: 'tool'; toolName: 'campaign' | 'image' | 'seo'; action?: 'openLibrary' };
+  | { type: 'tool'; toolName: 'campaign' | 'image' | 'seo'; action?: 'openLibrary' }
+  | { type: 'profile' };
 
 const App: React.FC = () => {
+  const { user, loading } = useAuth();
   const [currentView, setCurrentView] = useState<ViewState>({ type: 'dashboard' });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -40,6 +47,18 @@ const App: React.FC = () => {
     if (mainContent) mainContent.scrollTop = 0;
   };
 
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-[#020712] text-white">
+        <Loader2 className="w-10 h-10 animate-spin text-[#38BDF8]" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <SplashPage />;
+  }
+
   const renderContent = () => {
     switch (currentView.type) {
       case 'dashboard':
@@ -55,6 +74,8 @@ const App: React.FC = () => {
           case 'seo': return <SeoAnalyzer />;
           default: return <div>Tool not found</div>;
         }
+      case 'profile':
+        return <ProfilePage />;
       default:
         return <Dashboard onNavigate={handleNavigate} courses={COURSES} />;
     }
@@ -63,19 +84,18 @@ const App: React.FC = () => {
   return (
     <div className={`flex h-screen overflow-hidden selection:bg-[#38BDF8] selection:text-[#020712] transition-colors duration-300 ${isDarkMode ? 'text-[#F9FAFB]' : 'text-[#0F172A]'}`}>
       {/* Mobile Menu Overlay */}
-      <div 
-        className={`fixed inset-0 bg-black/60 backdrop-blur-md z-40 transition-opacity duration-300 md:hidden ${
-          isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
+      <div
+        className={`fixed inset-0 bg-black/60 backdrop-blur-md z-40 transition-opacity duration-300 md:hidden ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
         onClick={() => setIsMobileMenuOpen(false)}
       />
 
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-[280px] bg-white/80 dark:bg-[#0F172A]/85 backdrop-blur-xl border-r border-slate-200 dark:border-white/10 transform transition-transform duration-400 cubic-bezier(0.21, 0.85, 0.35, 1.0) md:relative md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <Sidebar 
-          currentView={currentView} 
-          onNavigate={handleNavigate} 
-          onCloseMobile={() => setIsMobileMenuOpen(false)} 
+        <Sidebar
+          currentView={currentView}
+          onNavigate={handleNavigate}
+          onCloseMobile={() => setIsMobileMenuOpen(false)}
           isDarkMode={isDarkMode}
           onToggleTheme={() => setIsDarkMode(!isDarkMode)}
         />
@@ -86,7 +106,7 @@ const App: React.FC = () => {
         {/* Mobile Header */}
         <header className="bg-white/70 dark:bg-[#0F172A]/70 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 md:hidden flex items-center justify-between p-4 sticky top-0 z-30 transition-colors">
           <div className="flex items-center">
-             <button 
+            <button
               onClick={() => setIsMobileMenuOpen(true)}
               className="p-2 -ml-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 text-slate-800 dark:text-white transition-colors"
             >
@@ -97,10 +117,10 @@ const App: React.FC = () => {
             </span>
           </div>
           <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#38BDF8] to-[#A855F7] p-[2px] shadow-[0_0_15px_rgba(56,189,248,0.5)]">
-             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" alt="User" className="rounded-full bg-slate-100 dark:bg-[#0F172A] h-full w-full" />
+            <img src={user?.photoURL || "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex"} alt="User" className="rounded-full bg-slate-100 dark:bg-[#0F172A] h-full w-full" />
           </div>
         </header>
-        
+
         <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 scroll-smooth">
           <div className="max-w-7xl mx-auto animate-slide-up">
             {renderContent()}
