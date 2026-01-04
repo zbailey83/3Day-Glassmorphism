@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Camera, Edit2, Grid, Award, Zap, Calendar, MessageSquare, Heart, Share2, UploadCloud } from 'lucide-react';
+import { Camera, Edit2, Grid, Award, Zap, Calendar, MessageSquare, Heart, Share2, UploadCloud, Terminal, Shield, Sparkles } from 'lucide-react';
 import { GalleryItem } from '../types';
 import { getUserGallery } from '../services/firebase';
 import { UploadProjectModal } from './modals/UploadProjectModal';
@@ -13,6 +14,18 @@ export const ProfilePage: React.FC = () => {
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isLoadingGallery, setIsLoadingGallery] = useState(true);
+
+    const defaultProfile = {
+        uid: user?.uid || '',
+        email: user?.email || '',
+        displayName: user?.displayName || '',
+        photoURL: user?.photoURL || '',
+        xp: 0,
+        level: 1,
+        streakDays: 1,
+        lastLogin: new Date(),
+        enrolledCourses: []
+    };
 
     useEffect(() => {
         const fetchGallery = async () => {
@@ -37,34 +50,50 @@ export const ProfilePage: React.FC = () => {
     if (!user) return null;
 
     return (
-        <div className="flex flex-col h-full animate-slide-up">
-            {isUploadModalOpen && (
+        <div className="flex flex-col h-full animate-slide-up relative z-0">
+            {isUploadModalOpen && createPortal(
                 <UploadProjectModal
                     onClose={() => setIsUploadModalOpen(false)}
                     onUploadComplete={handleUploadComplete}
-                />
+                />,
+                document.body
             )}
 
-            {isEditModalOpen && userProfile && (
+            {isEditModalOpen && createPortal(
                 <EditProfileModal
                     onClose={() => setIsEditModalOpen(false)}
-                    onUpdateComplete={() => window.location.reload()} // Simple reload to refresh context for now
-                    initialData={userProfile}
-                />
+                    onUpdateComplete={() => window.location.reload()}
+                    initialData={userProfile || defaultProfile}
+                />,
+                document.body
             )}
 
             {/* Header Profile Card */}
             <div className="relative w-full rounded-[24px] overflow-hidden bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-white/5 shadow-xl mb-8 group">
 
                 {/* Banner */}
-                <div className="h-48 bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] w-full relative">
-                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                <div className="h-48 w-full relative group/banner">
+                    {userProfile?.bannerURL ? (
+                        <img
+                            src={userProfile.bannerURL}
+                            alt="Profile Banner"
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] relative">
+                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                        </div>
+                    )}
+
                     <button
                         onClick={() => setIsEditModalOpen(true)}
-                        className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full backdrop-blur-md transition-colors"
+                        className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full backdrop-blur-md transition-all opacity-0 group-hover/banner:opacity-100"
                     >
                         <Edit2 size={16} />
                     </button>
+
+                    {/* Dark overlay gradient for text readability at bottom */}
+                    <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent pointer-events-none"></div>
                 </div>
 
                 {/* Profile Info */}
@@ -129,17 +158,24 @@ export const ProfilePage: React.FC = () => {
 
                 {/* Left: Stats/Badges */}
                 <div className="w-full lg:w-80 space-y-6">
-                    <div className="glass-panel p-6 rounded-[24px]">
-                        <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4 flex items-center">
-                            <Award className="text-[#A855F7] mr-2" size={20} /> Achievements
-                        </h3>
-                        <div className="grid grid-cols-4 gap-2">
-                            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                                <div key={i} className="aspect-square rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5 flex items-center justify-center grayscale hover:grayscale-0 transition-all cursor-pointer hover:bg-[#38BDF8]/10 hover:border-[#38BDF8]/30">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#38BDF8] to-[#A855F7] opacity-60"></div>
-                                </div>
-                            ))}
-                        </div>
+                    <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4 flex items-center">
+                        <Award className="text-[#A855F7] mr-2" size={20} /> Achievements
+                    </h3>
+                    <div className="grid grid-cols-4 gap-3">
+                        {[
+                            { icon: Zap, color: '#F59E0B', label: 'Fast Starter' },
+                            { icon: Calendar, color: '#10B981', label: 'Consistent' },
+                            { icon: Heart, color: '#EF4444', label: 'Community' },
+                            { icon: Share2, color: '#38BDF8', label: 'Sharer' },
+                            { icon: Terminal, color: '#6366F1', label: 'Coder' },
+                            { icon: Grid, color: '#A855F7', label: 'Architect' },
+                            { icon: Shield, color: '#F43F5E', label: 'Guardian' },
+                            { icon: Sparkles, color: '#EAB308', label: 'Wizard' }
+                        ].map((badge, i) => (
+                            <div key={i} className="aspect-square rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center hover:bg-white/10 transition-all cursor-pointer group/badge relative" title={badge.label}>
+                                <badge.icon size={20} style={{ color: badge.color }} className="opacity-80 group-hover/badge:opacity-100 group-hover/badge:scale-110 transition-all" />
+                            </div>
+                        ))}
                     </div>
 
                     <div className="glass-panel p-6 rounded-[24px]">

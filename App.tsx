@@ -113,11 +113,14 @@ const App: React.FC = () => {
               <Menu size={24} />
             </button>
             <span className="ml-3 font-display font-bold text-xl text-slate-900 dark:text-white">
-              MarketerAI
+              VibeCoder
             </span>
           </div>
-          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#38BDF8] to-[#A855F7] p-[2px] shadow-[0_0_15px_rgba(56,189,248,0.5)]">
-            <img src={user?.photoURL || "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex"} alt="User" className="rounded-full bg-slate-100 dark:bg-[#0F172A] h-full w-full" />
+          <div
+            onClick={() => handleNavigate({ type: 'profile' })}
+            className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#38BDF8] to-[#A855F7] p-[2px] shadow-[0_0_15px_rgba(56,189,248,0.5)] cursor-pointer active:scale-95 transition-transform"
+          >
+            <img src={user?.photoURL || "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex"} alt="User" className="rounded-full bg-slate-100 dark:bg-[#0F172A] h-full w-full object-cover" />
           </div>
         </header>
 

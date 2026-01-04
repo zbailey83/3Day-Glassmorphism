@@ -48,6 +48,7 @@ export interface UserProfile {
     email: string | null;
     displayName: string | null;
     photoURL: string | null;
+    bannerURL?: string;
     bio?: string;
     location?: string;
     role?: string;
