@@ -1,53 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Camera, Edit2, Grid, Award, Zap, Calendar, MessageSquare, Heart, Share2, UploadCloud } from 'lucide-react';
 import { GalleryItem } from '../types';
-
-// Mock Data
-const MOCK_GALLERY: GalleryItem[] = [
-    {
-        id: '1',
-        userId: 'user1',
-        courseId: 'c1',
-        title: 'Neon City Landing Page',
-        imageUrl: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        description: 'Built a cyber-punk aesthetic landing page using CSS Grid and Glassmorphism.',
-        submittedAt: new Date(),
-        likes: 24,
-        tags: ['CSS', 'Design', 'Glassmorphism']
-    },
-    {
-        id: '2',
-        userId: 'user1',
-        courseId: 'c2',
-        title: 'AI Chat Interface',
-        imageUrl: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        description: 'Implemented a chat UI that connects to the Gemini API for real-time responses.',
-        submittedAt: new Date(Date.now() - 86400000),
-        likes: 12,
-        tags: ['React', 'AI', 'API']
-    },
-    {
-        id: '3',
-        userId: 'user1',
-        courseId: 'c1',
-        title: 'Portfolio Grid',
-        imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        description: 'A responsive masonry grid layout for showcasing creative work.',
-        submittedAt: new Date(Date.now() - 172800000),
-        likes: 45,
-        tags: ['Layout', 'Responsive']
-    }
-];
+import { getUserGallery } from '../services/firebase';
+import { UploadProjectModal } from './modals/UploadProjectModal';
 
 export const ProfilePage: React.FC = () => {
     const { user, userProfile } = useAuth();
     const [activeTab, setActiveTab] = useState<'work' | 'saved'>('work');
+    const [gallery, setGallery] = useState<GalleryItem[]>([]);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [isLoadingGallery, setIsLoadingGallery] = useState(true);
+
+    useEffect(() => {
+        const fetchGallery = async () => {
+            if (user) {
+                try {
+                    const items = await getUserGallery(user.uid);
+                    setGallery(items);
+                } catch (e) {
+                    console.error("Failed to load gallery", e);
+                } finally {
+                    setIsLoadingGallery(false);
+                }
+            }
+        };
+        fetchGallery();
+    }, [user]);
+
+    const handleUploadComplete = (newItem: GalleryItem) => {
+        setGallery([newItem, ...gallery]);
+    };
 
     if (!user) return null;
 
     return (
         <div className="flex flex-col h-full animate-slide-up">
+            {isUploadModalOpen && (
+                <UploadProjectModal
+                    onClose={() => setIsUploadModalOpen(false)}
+                    onUploadComplete={handleUploadComplete}
+                />
+            )}
+
             {/* Header Profile Card */}
             <div className="relative w-full rounded-[24px] overflow-hidden bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-white/5 shadow-xl mb-8 group">
 
@@ -100,7 +95,7 @@ export const ProfilePage: React.FC = () => {
                         <div className="w-px h-8 bg-slate-200 dark:bg-white/10"></div>
                         <div className="text-center">
                             <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                                {MOCK_GALLERY.length}
+                                {gallery.length}
                             </div>
                             <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Projects</div>
                         </div>
@@ -133,8 +128,8 @@ export const ProfilePage: React.FC = () => {
                         <div className="grid grid-cols-7 gap-1">
                             {Array.from({ length: 28 }).map((_, i) => (
                                 <div key={i} className={`aspect-square rounded-md ${Math.random() > 0.7
-                                        ? 'bg-[#10B981]/40 border border-[#10B981]/50'
-                                        : 'bg-slate-100 dark:bg-white/5'
+                                    ? 'bg-[#10B981]/40 border border-[#10B981]/50'
+                                    : 'bg-slate-100 dark:bg-white/5'
                                     }`}></div>
                             ))}
                         </div>
@@ -160,14 +155,23 @@ export const ProfilePage: React.FC = () => {
                             </button>
                         </div>
 
-                        <button className="flex items-center px-4 py-2 bg-[#38BDF8] hover:bg-[#0284C7] text-white rounded-xl font-bold transition-colors shadow-lg shadow-[#38BDF8]/20">
+                        <button
+                            onClick={() => setIsUploadModalOpen(true)}
+                            className="flex items-center px-4 py-2 bg-[#38BDF8] hover:bg-[#0284C7] text-white rounded-xl font-bold transition-colors shadow-lg shadow-[#38BDF8]/20"
+                        >
                             <UploadCloud size={18} className="mr-2" /> Upload Project
                         </button>
                     </div>
 
                     {/* Gallery Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {MOCK_GALLERY.map(item => (
+                        {isLoadingGallery && (
+                            <div className="col-span-2 py-12 flex justify-center text-slate-500">
+                                <div className="animate-spin mr-2">🌀</div> Loading gallery...
+                            </div>
+                        )}
+
+                        {!isLoadingGallery && gallery.map(item => (
                             <div key={item.id} className="group glass-panel rounded-[24px] overflow-hidden hover:translate-y-[-4px] transition-transform duration-300">
                                 {/* Image */}
                                 <div className="aspect-video bg-slate-200 dark:bg-[#020712] relative overflow-hidden">
@@ -188,14 +192,16 @@ export const ProfilePage: React.FC = () => {
                                 <div className="p-6">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-xs font-bold text-[#38BDF8] uppercase tracking-wider">{item.tags[0]}</span>
-                                        <span className="text-xs text-slate-400">{item.submittedAt.toLocaleDateString()}</span>
+                                        <span className="text-xs text-slate-400">
+                                            {item.submittedAt?.toDate ? item.submittedAt.toDate().toLocaleDateString() : 'Just now'}
+                                        </span>
                                     </div>
                                     <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white mb-2">{item.title}</h3>
                                     <p className="text-sm text-slate-500 dark:text-[#94A3B8] leading-relaxed line-clamp-2 mb-4">{item.description}</p>
 
                                     <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-white/5">
                                         <div className="flex items-center text-xs text-slate-400">
-                                            <MessageSquare size={14} className="mr-1" /> 3 Comments
+                                            <MessageSquare size={14} className="mr-1" /> 0 Comments
                                         </div>
                                         <div className="flex items-center text-xs font-bold text-slate-900 dark:text-white">
                                             <Heart size={14} className="mr-1 text-red-500 fill-red-500" /> {item.likes}
@@ -206,7 +212,10 @@ export const ProfilePage: React.FC = () => {
                         ))}
 
                         {/* Empty State / Add New */}
-                        <div className="border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[24px] flex flex-col items-center justify-center p-8 text-center min-h-[300px] hover:border-[#38BDF8]/50 hover:bg-[#38BDF8]/5 transition-all cursor-pointer group/add">
+                        <div
+                            onClick={() => setIsUploadModalOpen(true)}
+                            className="border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[24px] flex flex-col items-center justify-center p-8 text-center min-h-[300px] hover:border-[#38BDF8]/50 hover:bg-[#38BDF8]/5 transition-all cursor-pointer group/add h-full"
+                        >
                             <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center mb-4 group-hover/add:bg-[#38BDF8]/20 group-hover/add:text-[#38BDF8] transition-colors">
                                 <UploadCloud size={32} className="text-slate-400 dark:text-slate-600 group-hover/add:text-[#38BDF8]" />
                             </div>

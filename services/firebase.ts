@@ -59,6 +59,35 @@ export const addXP = async (uid: string, amount: number) => {
     const userRef = doc(db, 'users', uid);
     await updateDoc(userRef, {
         xp: increment(amount)
-        // basic level up logic could go here or in a cloud function
     });
+};
+
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, addDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { GalleryItem } from '../types';
+
+export const uploadFile = async (file: File, path: string) => {
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
+};
+
+export const createGalleryItem = async (item: Omit<GalleryItem, 'id'>) => {
+    const docRef = await addDoc(collection(db, 'gallery'), item);
+    return { id: docRef.id, ...item };
+};
+
+export const getUserGallery = async (userId: string) => {
+    const q = query(
+        collection(db, 'gallery'),
+        where('userId', '==', userId),
+        orderBy('submittedAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GalleryItem));
+};
+
+export const updateUserProfile = async (uid: string, data: Partial<UserProfile>) => {
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, data);
 };

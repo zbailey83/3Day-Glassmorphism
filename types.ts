@@ -48,6 +48,9 @@ export interface UserProfile {
     email: string | null;
     displayName: string | null;
     photoURL: string | null;
+    bio?: string;
+    location?: string;
+    role?: string;
     xp: number;
     level: number;
     streakDays: number;
