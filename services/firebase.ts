@@ -67,9 +67,18 @@ import { collection, addDoc, query, where, getDocs, orderBy } from 'firebase/fir
 import { GalleryItem } from '../types';
 
 export const uploadFile = async (file: File, path: string) => {
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
+    try {
+        console.log(`Starting upload to ${path} (${file.size} bytes)...`);
+        const storageRef = ref(storage, path);
+        const result = await uploadBytes(storageRef, file);
+        console.log("Upload succesful:", result.metadata.fullPath);
+        const url = await getDownloadURL(storageRef);
+        console.log("Download URL generated:", url);
+        return url;
+    } catch (error) {
+        console.error("Error uploading file:", error);
+        throw error;
+    }
 };
 
 export const createGalleryItem = async (item: Omit<GalleryItem, 'id'>) => {

@@ -46,23 +46,30 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
         if (!user) return;
 
         setIsSaving(true);
+        console.log("Starting profile update...");
+
         try {
             let photoURL = initialData.photoURL;
             let bannerURL = initialData.bannerURL;
 
             // 1. Upload new avatar if selected
             if (avatarFile) {
+                console.log("Uploading avatar...");
                 const path = `avatars/${user.uid}/${Date.now()}_${avatarFile.name}`;
                 photoURL = await uploadFile(avatarFile, path);
+                console.log("Avatar uploaded:", photoURL);
             }
 
             // 2. Upload new banner if selected
             if (bannerFile) {
+                console.log("Uploading banner...");
                 const path = `banners/${user.uid}/${Date.now()}_${bannerFile.name}`;
                 bannerURL = await uploadFile(bannerFile, path);
+                console.log("Banner uploaded:", bannerURL);
             }
 
             // 3. Update Firestore Profile
+            console.log("Updating Firestore profile...");
             const updates: Partial<UserProfile> = {
                 displayName,
                 bio,
@@ -72,20 +79,25 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
                 bannerURL
             };
             await updateUserProfile(user.uid, updates);
+            console.log("Firestore updated");
 
             // 4. Update Firebase Auth Profile (for consistency across app)
             if (auth.currentUser) {
+                console.log("Updating Auth profile...");
                 await updateProfile(auth.currentUser, {
                     displayName: displayName,
                     photoURL: photoURL
                 });
+                console.log("Auth profile updated");
             }
 
+            console.log("Update sequence complete. Closing modal.");
             onUpdateComplete();
             onClose();
-        } catch (error) {
-            console.error("Update failed", error);
-            alert("Failed to update profile.");
+        } catch (error: any) {
+            console.error("Update failed detailed:", error);
+            // Show visible alert for user
+            alert(`Failed to update profile: ${error.message || error}`);
         } finally {
             setIsSaving(false);
         }
