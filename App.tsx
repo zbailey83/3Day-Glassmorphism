@@ -113,7 +113,7 @@ const App: React.FC = () => {
               <Menu size={24} />
             </button>
             <span className="ml-3 font-display font-bold text-xl text-slate-900 dark:text-white">
-              VibeCoder
+              VIBE DEV 2026
             </span>
           </div>
           <div

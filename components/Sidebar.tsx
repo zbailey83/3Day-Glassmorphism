@@ -32,7 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onClo
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#38BDF8] to-[#6366F1] flex items-center justify-center shadow-[0_0_20px_rgba(56,189,248,0.4)] group-hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] transition-all duration-500">
             <Zap className="text-white w-5 h-5 group-hover:rotate-12 transition-transform" />
           </div>
-          <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white tracking-tight">VibeCoder</h1>
+          <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white tracking-tight">VIBE DEV 2026</h1>
         </div>
         <button onClick={onCloseMobile} className="md:hidden p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors rounded-full hover:bg-black/5 dark:hover:bg-white/10">
           <X size={20} />
