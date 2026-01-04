@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GSAP Hero Effect Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        main {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100vh;
+            background: rgb(14, 16, 15);
+        }
+
+        canvas {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <canvas></canvas>
+    </main>
+
+    <script>
+        const c = document.querySelector("canvas");
+        const ctx = c.getContext("2d");
+        let cw = (c.width = window.innerWidth);
+        let ch = (c.height = window.innerHeight);
+        let radius = Math.max(cw, ch);
+
+        const animalAssets = [
+            "whale-svgrepo-com.svg",
+            "rabbit-svgrepo-com.svg",
+            "polar-bear-svgrepo-com.svg",
+            "penguin-svgrepo-com.svg",
+            "jellyfish-svgrepo-com.svg",
+            "fox-svgrepo-com.svg",
+            "elk-svgrepo-com.svg",
+            "dinosaur-svgrepo-com.svg",
+            "cute-animals-svgrepo-com.svg",
+            "crocodile-svgrepo-com.svg"
+        ];
+
+        const particles = Array(99);
+        for (let i = 0; i < particles.length; i++) {
+            particles[i] = {
+                x: 0,
+                y: 0,
+                scale: 0,
+                rotate: 0,
+                img: new Image()
+            }
+            particles[i].img.src = "svg-assets/" + animalAssets[i % animalAssets.length];
+        }
+
+        const tl = gsap.timeline({ onUpdate: draw })
+            .fromTo(particles, {
+                x: (i) => {
+                    const angle = (i / particles.length * Math.PI * 2) - Math.PI / 2
+                    return Math.cos(angle * 10) * radius
+                },
+                y: (i) => {
+                    const angle = (i / particles.length * Math.PI * 2) - Math.PI / 2
+                    return Math.sin(angle * 10) * radius
+                },
+                scale: 1.1,
+                rotate: 0
+            }, {
+                duration: 5,
+                ease: "sine",
+                x: 0,
+                y: 0,
+                scale: 0,
+                rotate: -3,
+                stagger: {
+                    each: -0.05,
+                    repeat: -1
+                }
+            }, 0)
+            .seek(99);
+
+        function draw() {
+            particles.sort((a, b) => a.scale - b.scale); // sort by scale to set z-indexing
+            ctx.clearRect(0, 0, cw, ch);
+
+            particles.forEach((p, i) => {
+                ctx.translate(cw / 2, ch / 2);
+                ctx.rotate(p.rotate);
+                ctx.drawImage(
+                    p.img,
+                    p.x,
+                    p.y,
+                    p.img.width * p.scale * 0.7,
+                    p.img.height * p.scale * 0.7
+                );
+                ctx.resetTransform();
+            });
+        }
+
+        window.addEventListener("resize", () => {
+            cw = c.width = innerWidth;
+            ch = c.height = innerHeight;
+            radius = Math.max(cw, ch);
+            tl.invalidate();
+        });
+
+        c.addEventListener('pointerup', () => {
+            gsap.to(tl, {
+                timeScale: tl.isActive() ? 0 : 1 // use timeScale to toggle play / pause
+            })
+        });
+    </script>
+</body>
+
+</html>
