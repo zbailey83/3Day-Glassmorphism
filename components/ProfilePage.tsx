@@ -4,12 +4,14 @@ import { Camera, Edit2, Grid, Award, Zap, Calendar, MessageSquare, Heart, Share2
 import { GalleryItem } from '../types';
 import { getUserGallery } from '../services/firebase';
 import { UploadProjectModal } from './modals/UploadProjectModal';
+import { EditProfileModal } from './modals/EditProfileModal';
 
 export const ProfilePage: React.FC = () => {
     const { user, userProfile } = useAuth();
     const [activeTab, setActiveTab] = useState<'work' | 'saved'>('work');
     const [gallery, setGallery] = useState<GalleryItem[]>([]);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isLoadingGallery, setIsLoadingGallery] = useState(true);
 
     useEffect(() => {
@@ -43,13 +45,24 @@ export const ProfilePage: React.FC = () => {
                 />
             )}
 
+            {isEditModalOpen && userProfile && (
+                <EditProfileModal
+                    onClose={() => setIsEditModalOpen(false)}
+                    onUpdateComplete={() => window.location.reload()} // Simple reload to refresh context for now
+                    initialData={userProfile}
+                />
+            )}
+
             {/* Header Profile Card */}
             <div className="relative w-full rounded-[24px] overflow-hidden bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-white/5 shadow-xl mb-8 group">
 
                 {/* Banner */}
                 <div className="h-48 bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] w-full relative">
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                    <button className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full backdrop-blur-md transition-colors">
+                    <button
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full backdrop-blur-md transition-colors"
+                    >
                         <Edit2 size={16} />
                     </button>
                 </div>
@@ -61,7 +74,10 @@ export const ProfilePage: React.FC = () => {
                         <div className="w-32 h-32 rounded-full border-4 border-white dark:border-[#0F172A] shadow-lg overflow-hidden bg-[#0F172A]">
                             <img src={user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`} alt={user.displayName || "User"} className="w-full h-full object-cover" />
                         </div>
-                        <button className="absolute bottom-1 right-1 p-2 bg-[#38BDF8] text-white rounded-full shadow-lg hover:scale-110 transition-transform">
+                        <button
+                            onClick={() => setIsEditModalOpen(true)}
+                            className="absolute bottom-1 right-1 p-2 bg-[#38BDF8] text-white rounded-full shadow-lg hover:scale-110 transition-transform"
+                        >
                             <Camera size={14} />
                         </button>
                     </div>
@@ -74,7 +90,12 @@ export const ProfilePage: React.FC = () => {
                                 Level {userProfile?.level || 1}
                             </span>
                         </h1>
-                        <p className="text-slate-500 dark:text-[#94A3B8] mt-1">Full-Stack AI Developer • San Francisco, CA</p>
+                        <p className="text-slate-500 dark:text-[#94A3B8] mt-1">
+                            {userProfile?.role || "Full-Stack AI Developer"} • {userProfile?.location || "Global"}
+                        </p>
+                        {userProfile?.bio && (
+                            <p className="text-sm text-slate-400 mt-2 max-w-lg">{userProfile.bio}</p>
+                        )}
                     </div>
 
                     {/* Stats */}
