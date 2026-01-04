@@ -62,23 +62,47 @@ export const addXP = async (uid: string, amount: number) => {
     });
 };
 
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
 import { collection, addDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { GalleryItem } from '../types';
 
 export const uploadFile = async (file: File, path: string) => {
-    try {
+    return new Promise<string>((resolve, reject) => {
         console.log(`Starting upload to ${path} (${file.size} bytes)...`);
         const storageRef = ref(storage, path);
-        const result = await uploadBytes(storageRef, file);
-        console.log("Upload succesful:", result.metadata.fullPath);
-        const url = await getDownloadURL(storageRef);
-        console.log("Download URL generated:", url);
-        return url;
-    } catch (error) {
-        console.error("Error uploading file:", error);
-        throw error;
-    }
+
+        // Use resumable upload for better state tracking
+        const uploadTask = uploadBytesResumable(storageRef, file);
+
+        // Timeout watchdog
+        const timeoutId = setTimeout(() => {
+            uploadTask.cancel();
+            console.error("Upload timeout: No completion within 20 seconds.");
+            reject(new Error("Upload timed out. Check your network or Firebase Storage CORS configuration."));
+        }, 20000);
+
+        uploadTask.on('state_changed',
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                console.log(`Upload is ${progress}% done`);
+            },
+            (error) => {
+                clearTimeout(timeoutId);
+                console.error("Upload error specific:", error.code, error.message);
+                reject(error);
+            },
+            async () => {
+                clearTimeout(timeoutId);
+                try {
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                    console.log("File available at", downloadURL);
+                    resolve(downloadURL);
+                } catch (e) {
+                    reject(e);
+                }
+            }
+        );
+    });
 };
 
 export const createGalleryItem = async (item: Omit<GalleryItem, 'id'>) => {
