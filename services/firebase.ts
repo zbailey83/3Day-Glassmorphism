@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, serverTimestamp, arrayRemove, arrayUnion, documentId } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAnalytics } from 'firebase/analytics';
 import { UserProfile } from '../types';
@@ -45,7 +45,9 @@ export const syncUserProfile = async (user: any) => {
             level: 1,
             streakDays: 1,
             lastLogin: serverTimestamp(),
-            enrolledCourses: []
+            enrolledCourses: [],
+            savedProjects: [],
+            likedProjects: []
         };
         await setDoc(userRef, newProfile);
     } else {
@@ -120,7 +122,69 @@ export const getUserGallery = async (userId: string) => {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GalleryItem));
 };
 
+export const getProjectsByIds = async (ids: string[]) => {
+    if (!ids || ids.length === 0) return [];
+
+    // Firestore 'in' has a limit of 10-30, so for production app needs chunking
+    // For now we'll slice to 10
+    const chunks = [];
+    for (let i = 0; i < ids.length; i += 10) {
+        chunks.push(ids.slice(i, i + 10));
+    }
+
+    let results: GalleryItem[] = [];
+
+    for (const chunk of chunks) {
+        const q = query(
+            collection(db, 'gallery'),
+            where(documentId(), 'in', chunk)
+        );
+        const querySnapshot = await getDocs(q);
+        const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GalleryItem));
+        results = [...results, ...docs];
+    }
+
+    return results;
+};
+
 export const updateUserProfile = async (uid: string, data: Partial<UserProfile>) => {
     const userRef = doc(db, 'users', uid);
     await updateDoc(userRef, data);
+};
+
+export const toggleProjectLike = async (userId: string, projectId: string, isLiked: boolean) => {
+    const userRef = doc(db, 'users', userId);
+    const projectRef = doc(db, 'gallery', projectId);
+
+    if (isLiked) {
+        // Unlike
+        await updateDoc(userRef, {
+            likedProjects: arrayRemove(projectId)
+        });
+        await updateDoc(projectRef, {
+            likes: increment(-1)
+        });
+    } else {
+        // Like
+        await updateDoc(userRef, {
+            likedProjects: arrayUnion(projectId)
+        });
+        await updateDoc(projectRef, {
+            likes: increment(1)
+        });
+    }
+};
+
+export const toggleProjectSave = async (userId: string, projectId: string, isSaved: boolean) => {
+    const userRef = doc(db, 'users', userId);
+
+    if (isSaved) {
+        await updateDoc(userRef, {
+            savedProjects: arrayRemove(projectId)
+        });
+    } else {
+        await updateDoc(userRef, {
+            savedProjects: arrayUnion(projectId)
+        });
+    }
 };

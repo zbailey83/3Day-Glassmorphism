@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Camera, Edit2, Grid, Award, Zap, Calendar, MessageSquare, Heart, Share2, UploadCloud, Terminal, Shield, Sparkles } from 'lucide-react';
+import { Camera, Edit2, Grid, Award, Zap, Calendar, MessageSquare, Heart, Share2, UploadCloud, Terminal, Shield, Sparkles, Bookmark } from 'lucide-react';
 import { GalleryItem } from '../types';
-import { getUserGallery } from '../services/firebase';
+import { getUserGallery, getProjectsByIds, toggleProjectLike, toggleProjectSave } from '../services/firebase';
 import { UploadProjectModal } from './modals/UploadProjectModal';
 import { EditProfileModal } from './modals/EditProfileModal';
 
@@ -30,8 +30,15 @@ export const ProfilePage: React.FC = () => {
     useEffect(() => {
         const fetchGallery = async () => {
             if (user) {
+                setIsLoadingGallery(true);
                 try {
-                    const items = await getUserGallery(user.uid);
+                    let items: GalleryItem[] = [];
+                    if (activeTab === 'work') {
+                        items = await getUserGallery(user.uid);
+                    } else if (activeTab === 'saved') {
+                        const savedIds = userProfile?.savedProjects || [];
+                        items = await getProjectsByIds(savedIds);
+                    }
                     setGallery(items);
                 } catch (e) {
                     console.error("Failed to load gallery", e);
@@ -41,7 +48,43 @@ export const ProfilePage: React.FC = () => {
             }
         };
         fetchGallery();
-    }, [user]);
+    }, [user, activeTab, userProfile?.savedProjects]);
+
+    const handleToggleLike = async (item: GalleryItem) => {
+        if (!user || !userProfile) return;
+        const isLiked = userProfile.likedProjects?.includes(item.id);
+
+        // Optimistic UI update (local only for visual feedback, real sync comes from Firestore listener in AuthContext but we might need to manually update local gallery state if we want instant feedback on numbers)
+        // For simple "Heart" color, we rely on userProfile.
+        // For the count, we might need to increment locally.
+
+        try {
+            await toggleProjectLike(user.uid, item.id, !!isLiked);
+            // Updating the local gallery item like count for immediate feedback
+            setGallery(prev => prev.map(g =>
+                g.id === item.id
+                    ? { ...g, likes: g.likes + (isLiked ? -1 : 1) }
+                    : g
+            ));
+        } catch (error) {
+            console.error("Error toggling like", error);
+        }
+    };
+
+    const handleToggleSave = async (item: GalleryItem) => {
+        if (!user || !userProfile) return;
+        const isSaved = userProfile.savedProjects?.includes(item.id);
+
+        try {
+            await toggleProjectSave(user.uid, item.id, !!isSaved);
+            // If we are in 'saved' tab and we unsave, we might want to remove it from view? 
+            // Better to let it stay until refresh or tab change to avoid jumppiness, 
+            // but commonly users expect it to disappear or show as unsaved.
+            // Since we rely on userProfile prop for "isSaved" status, it will update automatically via AuthContext.
+        } catch (error) {
+            console.error("Error toggling save", error);
+        }
+    };
 
     const handleUploadComplete = (newItem: GalleryItem) => {
         setGallery([newItem, ...gallery]);
@@ -235,9 +278,20 @@ export const ProfilePage: React.FC = () => {
                                     <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
                                         <div className="w-full flex items-center justify-between">
-                                            <button className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors">
-                                                <Heart size={18} />
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleToggleLike(item); }}
+                                                    className={`p-2 backdrop-blur-md rounded-full transition-colors ${userProfile?.likedProjects?.includes(item.id) ? 'bg-red-500 text-white' : 'bg-white/20 text-white hover:bg-white/40'}`}
+                                                >
+                                                    <Heart size={18} fill={userProfile?.likedProjects?.includes(item.id) ? "currentColor" : "none"} />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleToggleSave(item); }}
+                                                    className={`p-2 backdrop-blur-md rounded-full transition-colors ${userProfile?.savedProjects?.includes(item.id) ? 'bg-[#38BDF8] text-white' : 'bg-white/20 text-white hover:bg-white/40'}`}
+                                                >
+                                                    <Bookmark size={18} fill={userProfile?.savedProjects?.includes(item.id) ? "currentColor" : "none"} />
+                                                </button>
+                                            </div>
                                             <button className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors">
                                                 <Share2 size={18} />
                                             </button>
@@ -261,7 +315,7 @@ export const ProfilePage: React.FC = () => {
                                             <MessageSquare size={14} className="mr-1" /> 0 Comments
                                         </div>
                                         <div className="flex items-center text-xs font-bold text-slate-900 dark:text-white">
-                                            <Heart size={14} className="mr-1 text-red-500 fill-red-500" /> {item.likes}
+                                            <Heart size={14} className={`mr-1 ${userProfile?.likedProjects?.includes(item.id) ? 'text-red-500 fill-red-500' : 'text-slate-400'}`} /> {item.likes}
                                         </div>
                                     </div>
                                 </div>

@@ -57,6 +57,8 @@ export interface UserProfile {
     streakDays: number;
     lastLogin: any; // Firestore Timestamp
     enrolledCourses: string[]; // course IDs
+    savedProjects: string[]; // gallery IDs
+    likedProjects: string[]; // gallery IDs
 }
 
 export interface GalleryItem {
