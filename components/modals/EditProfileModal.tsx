@@ -49,8 +49,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
         console.log("Starting profile update...");
 
         try {
-            let photoURL = initialData.photoURL;
-            let bannerURL = initialData.bannerURL;
+            let photoURL = initialData.photoURL ?? null;
+            let bannerURL = initialData.bannerURL ?? null;
 
             // 1. Upload new avatar if selected
             if (avatarFile) {
@@ -75,8 +75,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
                 bio,
                 location,
                 role,
-                photoURL: photoURL || null,
-                bannerURL: bannerURL || null
+                photoURL,
+                bannerURL
             };
             await updateUserProfile(user.uid, updates);
             console.log("Firestore updated");
