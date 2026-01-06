@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, X, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 interface AuthModalProps {
     isOpen: boolean;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { Camera, Edit2, Grid, Award, Zap, Calendar, MessageSquare, Heart, Share2, UploadCloud, Terminal, Shield, Sparkles, Bookmark } from 'lucide-react';
 import { GalleryItem } from '../types';
 import { getUserGallery, getProjectsByIds, toggleProjectLike, toggleProjectSave } from '../services/firebase';

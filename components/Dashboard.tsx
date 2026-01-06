@@ -4,7 +4,7 @@ import { Course } from '../types';
 import { ViewState } from '../App';
 import { PlayCircle, Clock, ArrowRight, Zap, Terminal, Layout, ShieldCheck, Code } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 interface DashboardProps {
   courses: Course[];

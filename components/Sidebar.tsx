@@ -2,7 +2,7 @@
 import React from 'react';
 import { ViewState } from '../App';
 import { Home, Terminal, Layout, ShieldCheck, X, Sparkles, Sun, Moon, Zap, LogOut } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 interface SidebarProps {
   onNavigate: (view: ViewState) => void;

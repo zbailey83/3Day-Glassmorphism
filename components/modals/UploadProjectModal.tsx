@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, UploadCloud, Loader2, Image as ImageIcon } from 'lucide-react';
 import { uploadFile, createGalleryItem, addXP } from '../../services/firebase';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { GalleryItem } from '../../types';
 
 interface UploadProjectModalProps {
@@ -83,8 +83,8 @@ export const UploadProjectModal: React.FC<UploadProjectModalProps> = ({ onClose,
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                         />
                         <div className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center transition-all ${previewUrl
-                                ? 'border-[#38BDF8]/50 bg-[#38BDF8]/5'
-                                : 'border-slate-300 dark:border-white/10 hover:border-[#38BDF8]/50 hover:bg-[#38BDF8]/5'
+                            ? 'border-[#38BDF8]/50 bg-[#38BDF8]/5'
+                            : 'border-slate-300 dark:border-white/10 hover:border-[#38BDF8]/50 hover:bg-[#38BDF8]/5'
                             }`}>
                             {previewUrl ? (
                                 <div className="relative w-full aspect-video rounded-lg overflow-hidden shadow-md">
@@ -149,8 +149,8 @@ export const UploadProjectModal: React.FC<UploadProjectModalProps> = ({ onClose,
                         onClick={djangoUpload}
                         disabled={!file || !title || isUploading}
                         className={`px-6 py-2.5 rounded-xl font-bold text-white flex items-center shadow-lg transition-all ${!file || !title || isUploading
-                                ? 'bg-slate-300 dark:bg-white/10 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-[#38BDF8] to-[#6366F1] hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:scale-105 active:scale-95'
+                            ? 'bg-slate-300 dark:bg-white/10 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-[#38BDF8] to-[#6366F1] hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:scale-105 active:scale-95'
                             }`}
                     >
                         {isUploading ? <Loader2 size={18} className="animate-spin mr-2" /> : <UploadCloud size={18} className="mr-2" />}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Course, Module, Lesson, QuizQuestion } from '../types';
 import { CheckCircle, PlayCircle, FileText, HelpCircle, ChevronRight, AlertCircle, ArrowLeft, ArrowRight, ChevronDown } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { updateModuleProgress } from '../services/firebase';
 
 interface CourseViewProps {
@@ -146,8 +146,8 @@ export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId 
                       key={lesson.id}
                       onClick={() => handleLessonChange(lesson)}
                       className={`w-full text-left p-3 pl-6 transition-all flex items-start group relative ${activeLesson.id === lesson.id
-                          ? 'bg-[#38BDF8]/10 text-slate-900 dark:text-white'
-                          : 'hover:bg-slate-100 dark:hover:bg-white/5 text-slate-500 dark:text-slate-400'
+                        ? 'bg-[#38BDF8]/10 text-slate-900 dark:text-white'
+                        : 'hover:bg-slate-100 dark:hover:bg-white/5 text-slate-500 dark:text-slate-400'
                         }`}
                     >
                       {activeLesson.id === lesson.id && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#38BDF8]"></div>}
@@ -189,14 +189,14 @@ const QuizItem: React.FC<{ question: QuizQuestion; index: number }> = ({ questio
             disabled={isSubmitted}
             onClick={() => setSelected(idx)}
             className={`w-full text-left px-5 py-4 rounded-xl text-sm font-medium transition-all duration-200 border ${isSubmitted
-                ? idx === question.correctAnswer
-                  ? 'bg-[#10B981]/20 border-[#10B981]/50 text-emerald-600 dark:text-[#34D399]'
-                  : idx === selected
-                    ? 'bg-red-500/20 border-red-500/50 text-red-600 dark:text-red-400'
-                    : 'bg-slate-50 dark:bg-white/5 border-transparent text-slate-400 dark:text-slate-500'
-                : selected === idx
-                  ? 'bg-[#38BDF8]/20 border-[#38BDF8]/50 text-[#0284C7] dark:text-[#38BDF8] shadow-sm'
-                  : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 text-slate-600 dark:text-[#CBD5F5]'
+              ? idx === question.correctAnswer
+                ? 'bg-[#10B981]/20 border-[#10B981]/50 text-emerald-600 dark:text-[#34D399]'
+                : idx === selected
+                  ? 'bg-red-500/20 border-red-500/50 text-red-600 dark:text-red-400'
+                  : 'bg-slate-50 dark:bg-white/5 border-transparent text-slate-400 dark:text-slate-500'
+              : selected === idx
+                ? 'bg-[#38BDF8]/20 border-[#38BDF8]/50 text-[#0284C7] dark:text-[#38BDF8] shadow-sm'
+                : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 text-slate-600 dark:text-[#CBD5F5]'
               }`}
           >
             {opt}

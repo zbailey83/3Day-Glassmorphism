@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { Sparkles, ArrowRight, Zap, Shield, Globe } from 'lucide-react';
 import { AuthModal } from './modals/AuthModal';
 

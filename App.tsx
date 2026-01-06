@@ -8,7 +8,7 @@ import { SeoAnalyzer } from './components/tools/SeoAnalyzer';
 import { Course, Module } from './types';
 import { COURSES } from './constants';
 import { Menu, X } from 'lucide-react';
-import { useAuth } from './contexts/AuthContext';
+import { useAuth } from './hooks/useAuth';
 
 import { SplashPage } from './components/SplashPage';
 import { ProfilePage } from './components/ProfilePage';

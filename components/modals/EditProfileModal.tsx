@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, UploadCloud, Loader2, Camera, User, MapPin, Briefcase, FileText } from 'lucide-react';
 import { uploadFile, updateUserProfile, auth } from '../../services/firebase';
 import { updateProfile } from 'firebase/auth';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { UserProfile } from '../../types';
 
 interface EditProfileModalProps {

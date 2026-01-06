@@ -76,16 +76,22 @@ export const uploadFile = async (file: File, path: string) => {
 
         // Use resumable upload for better state tracking
         const uploadTask = uploadBytesResumable(storageRef, file);
+        let uploadStarted = false;
 
         // Timeout watchdog
         const timeoutId = setTimeout(() => {
             uploadTask.cancel();
-            console.error("Upload timeout: No completion within 20 seconds.");
-            reject(new Error("Upload timed out. Check your network or Firebase Storage CORS configuration."));
-        }, 20000);
+            console.error("Upload timeout. Started:", uploadStarted);
+            if (!uploadStarted) {
+                reject(new Error("Upload failed to start. This is likely a CORS issue. Please run 'gsutil cors set cors.json gs://<your-bucket>'"));
+            } else {
+                reject(new Error("Upload timed out (slow network)."));
+            }
+        }, 60000); // 60s
 
         uploadTask.on('state_changed',
             (snapshot) => {
+                uploadStarted = true;
                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                 console.log(`Upload is ${progress}% done`);
             },
