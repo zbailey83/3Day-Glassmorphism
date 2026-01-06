@@ -12,6 +12,8 @@ interface SidebarProps {
   onToggleTheme: () => void;
 }
 
+import logo from '../logo-blue.png';
+
 export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onCloseMobile, isDarkMode, onToggleTheme }) => {
   const { user, userProfile, signInWithGoogle, logout } = useAuth();
   const navItemClass = (isActive: boolean) =>
@@ -29,10 +31,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onClo
     <div className="flex flex-col h-full p-6 relative">
       <div className="flex items-center justify-between mb-10 px-2 pt-2">
         <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => handleNav({ type: 'dashboard' })}>
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#38BDF8] to-[#6366F1] flex items-center justify-center shadow-[0_0_20px_rgba(56,189,248,0.4)] group-hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] transition-all duration-500">
-            <Zap className="text-white w-5 h-5 group-hover:rotate-12 transition-transform" />
-          </div>
-          <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white tracking-tight">VIBE DEV 2026</h1>
+          <img
+            src={logo}
+            alt="Vibe Dev"
+            className="h-10 w-auto object-contain transition-transform duration-500 group-hover:scale-105"
+          />
+          <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white tracking-tight hidden sm:block">VIBE DEV 2026</h1>
         </div>
         <button onClick={onCloseMobile} className="md:hidden p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors rounded-full hover:bg-black/5 dark:hover:bg-white/10">
           <X size={20} />

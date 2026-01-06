@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { Sparkles, ArrowRight, Zap, Shield, Globe } from 'lucide-react';
 import { AuthModal } from './modals/AuthModal';
+import logo from '../logo-blue.png';
 
 export const SplashPage: React.FC = () => {
     const { user } = useAuth();
@@ -32,10 +33,12 @@ export const SplashPage: React.FC = () => {
                 </div>
 
                 {/* Hero Title */}
-                <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold tracking-tight mb-8 leading-[1.1] animate-slide-up">
-                    Master the Art of <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#38BDF8] via-[#818CF8] to-[#A855F7]">Agentic AI Coding</span>
-                </h1>
+                <div className="flex flex-col items-center mb-8 animate-slide-up">
+                    <img src={logo} alt="Vibe Dev Logo" className="h-32 md:h-48 w-auto object-contain mb-8 drop-shadow-[0_0_30px_rgba(56,189,248,0.6)]" />
+                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold tracking-tight leading-[1.1] text-center">
+                        VIBE DEV <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#38BDF8] via-[#818CF8] to-[#A855F7] filter drop-shadow-[0_0_15px_rgba(56,189,248,0.3)]">2026</span>
+                    </h1>
+                </div>
 
                 <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed animate-slide-up" style={{ animationDelay: '0.1s' }}>
                     Join the elite developer community building the future. Experience a gamified learning platform powered by real-time AI agents.

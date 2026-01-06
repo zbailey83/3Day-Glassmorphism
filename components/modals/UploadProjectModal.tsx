@@ -30,10 +30,13 @@ export const UploadProjectModal: React.FC<UploadProjectModalProps> = ({ onClose,
         if (!user || !file || !title) return;
 
         setIsUploading(true);
+        console.log("Starting upload process...");
         try {
             // 1. Upload Image
+            console.log("Uploading image...");
             const path = `gallery/${user.uid}/${Date.now()}_${file.name}`;
             const imageUrl = await uploadFile(file, path);
+            console.log("Image uploaded, URL:", imageUrl);
 
             // 2. Create Firestore Doc
             const newItem: Omit<GalleryItem, 'id'> = {
@@ -47,16 +50,20 @@ export const UploadProjectModal: React.FC<UploadProjectModalProps> = ({ onClose,
                 tags: tags.split(',').map(t => t.trim()).filter(t => t)
             };
 
+            console.log("Creating Firestore document...", newItem);
             const created = await createGalleryItem(newItem);
+            console.log("Firestore document created:", created);
 
             // 3. Award XP
+            console.log("Awarding XP...");
             await addXP(user.uid, 50);
 
+            console.log("Upload complete, closing modal.");
             onUploadComplete(created);
             onClose();
-        } catch (error) {
-            console.error("Upload failed", error);
-            alert("Upload failed, please try again.");
+        } catch (error: any) {
+            console.error("Upload failed in djangoUpload:", error);
+            alert(`Upload failed: ${error.message || error}`);
         } finally {
             setIsUploading(false);
         }

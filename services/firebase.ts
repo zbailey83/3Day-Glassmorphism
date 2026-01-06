@@ -59,10 +59,16 @@ export const syncUserProfile = async (user: any) => {
 };
 
 export const addXP = async (uid: string, amount: number) => {
-    const userRef = doc(db, 'users', uid);
-    await updateDoc(userRef, {
-        xp: increment(amount)
-    });
+    try {
+        const userRef = doc(db, 'users', uid);
+        await updateDoc(userRef, {
+            xp: increment(amount)
+        });
+        console.log(`Added ${amount} XP to user ${uid}`);
+    } catch (error) {
+        console.error("Error adding XP:", error);
+        // Don't rethrow, let it fail silently but logged
+    }
 };
 
 import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
@@ -115,8 +121,15 @@ export const uploadFile = async (file: File, path: string) => {
 };
 
 export const createGalleryItem = async (item: Omit<GalleryItem, 'id'>) => {
-    const docRef = await addDoc(collection(db, 'gallery'), item);
-    return { id: docRef.id, ...item };
+    console.log("Creating gallery item:", item);
+    try {
+        const docRef = await addDoc(collection(db, 'gallery'), item);
+        console.log("Gallery item created with ID:", docRef.id);
+        return { id: docRef.id, ...item };
+    } catch (error) {
+        console.error("Error creating gallery item:", error);
+        throw error;
+    }
 };
 
 export const getUserGallery = async (userId: string) => {
