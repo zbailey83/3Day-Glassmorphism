@@ -6,97 +6,300 @@ export const GEMINI_IMAGE_MODEL = 'gemini-2.5-flash-image';
 
 export const COURSES: Course[] = [
   {
-    id: 'vibe-coding-2026',
-    title: 'The 2026 Vibe Coding Masterclass',
-    subtitle: 'Ship Production-Grade Software Without Writing Syntax',
-    description: 'Master the art of directing AI agents (Cursor, Claude, Gemini) to build, deploy, and scale web applications using the Vibe methodology.',
-    tags: ['AI Engineering', 'Vibe Coding', 'No-Code/Directing'],
-    thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=800&auto=format&fit=crop',
+    id: 'course-1-vibe-coding-101',
+    title: 'Course 1: Vibe Coding 101',
+    subtitle: 'Shift from Syntax to AI Orchestration',
+    description: 'Get your development environment set up and ship your first simple web app by shifting your mindset from syntax memorization to AI orchestration.',
+    tags: ['Beginner', 'Setup', 'Prompting'],
+    thumbnail: 'https://images.unsplash.com/photo-1664575602276-acd073f104c1?q=80&w=800&auto=format&fit=crop',
     modules: [
       {
-        id: 'm1-foundation',
-        title: 'The Foundation & The Stack',
-        duration: '25 min',
-        type: 'reading',
-        content: `
-### The Vibe Shift
-Moving from manual syntax entry to high-level systems architecture and direction. Understanding the role of the "AI Coding Agent" vs. the "Human Director."
-
-### The 4-Pillar Stack
-1. **Cursor:** The AI-native editor (The Engine).
-2. **Supabase:** Backend, Auth, and Database (The Brain).
-3. **GitHub:** Version Control (The Save File).
-4. **Vercel:** Deployment (The Stage).
-
-### The "Context Window" Strategy
-Understanding tokens, context windows (Claude vs. Gemini), and why "more context" isn't always better.
-        `,
-        quiz: [
+        id: 'c1-m1',
+        title: 'Module 1: The Vibe Shift',
+        lessons: [
           {
-            id: 'v1-q1',
-            question: 'What is the core role of a human in Vibe Coding?',
-            options: ['Writing every line of CSS', 'High-level systems architecture and direction', 'Manually debugging semicolon errors', 'Running npm install repeatedly'],
-            correctAnswer: 1,
-            explanation: 'In Vibe Coding, the human acts as a Director/Architect while AI agents handle the syntax.'
+            id: 'c1-m1-l1',
+            title: '1.1 Welcome to Vibe Dev 2026',
+            duration: '10 min',
+            type: 'video',
+            content: `### Philosophy & Expectations
+            
+Welcome to the future of coding. In this module, we explore why "learning syntax" is no longer the barrier to entry. We focus on:
+
+- **AI Orchestration**: Managing tools like Cursor and Replit.
+- **The New Workflow**: Prompt -> Code -> Iterate.
+            `
+          },
+          {
+            id: 'c1-m1-l2',
+            title: '1.2 The Tech Stack',
+            duration: '20 min',
+            type: 'video',
+            content: `### Setting up your Environment
+            
+We will be setting up the core tools for Vibe Coding:
+1. **Cursor**: The AI-first code editor.
+2. **VS Code**: The classic standard (as fallback).
+3. **Replit**: For quick cloud deployments.
+4. **Python Basics**: Just enough to understand the scripts AI generates for you.
+            `
+          },
+          {
+            id: 'c1-m1-l3',
+            title: '1.3 "Hello World" in the AI Era',
+            duration: '15 min',
+            type: 'lab',
+            content: `### Writing specific scripts without code
+            
+Your task: Use Cursor to generate a Python script that prints "Hello, Vibe Dev!" and calculates the Fibonacci sequence. Do not write a single line yourself.
+            `
           }
         ]
       },
       {
-        id: 'm2-architect',
-        title: 'The Architect’s Workflow',
-        duration: '45 min',
-        type: 'lab',
-        content: `
-### Spec Mode Workflow
-Translate a "shower thought" into a rigorous technical specification. 
-
-*   **The Brain Dump Protocol:** Using voice dictation to record stream-of-consciousness ideas.
-*   **Visual Context Injection:** Programming with sketches and screenshots.
-*   **The Senior EM Prompt:** Forcing the AI to "interview" you before writing code.
-
-*Interactive Lab: Use the Project Spec Architect tool.*
-        `
-      },
-      {
-        id: 'm3-execution',
-        title: 'Execution, Refactoring & Shipping',
-        duration: '50 min',
-        type: 'lab',
-        content: `
-### Cursor Composer Mastery
-How to use "Plan Mode" vs. "Normal Mode." When to use @files to pin documentation for context.
-
-### Model Selection Strategy
-*   **Planning/Architecture:** Use Claude 3.7 Opus (High intelligence).
-*   **Refactoring/Deep Logic:** Use OpenAI o1/o3-mini.
-*   **Small UI Tweaks:** Use Gemini 2.5 Flash (Fast, cheap).
-
-### The ELI5 Loop
-Prevent code bloat by keeping files under 200 lines and using "Critique Yourself" prompts.
-        `
+        id: 'c1-m2',
+        title: 'Module 2: Prompting for Code',
+        lessons: [
+          {
+            id: 'c1-m2-l1',
+            title: '2.1 Talking to the Machine',
+            duration: '25 min',
+            type: 'reading',
+            content: `### Basic Prompt Engineering
+            
+Learn the difference between "Write a website" and "Create a responsive landing page with a hero section using Tailwind CSS." 
+Precision is key.
+            `
+          },
+          {
+            id: 'c1-m2-l2',
+            title: '2.2 Iteration Speed',
+            duration: '20 min',
+            type: 'lab',
+            content: `### Debugging with AI
+            
+Errors are part of the process. Learn how to paste error logs into the AI context to get instant fixes.
+            `
+          },
+          {
+            id: 'c1-m2-l3',
+            title: '2.3 Deploying Your First Static Site',
+            duration: '30 min',
+            type: 'lab',
+            content: `### Action Item: Deploy a Link-in-Bio Page
+            
+**Goal**: Deploy a personal "Link-in-Bio" landing page using only AI prompts.
+**Tools**: HTML/CSS (generated), Netlify or Vercel (drag and drop).
+            `
+          }
+        ]
       }
     ]
   },
   {
-    id: 'vibe-mindset',
-    title: 'The Vibe Mindset',
-    subtitle: 'Stay Focused in a Sea of AI Noise',
-    description: 'Bonus material on Documentation-Driven Development (DDD) and managing project scope.',
-    tags: ['Mindset', 'Product Management', 'DDD'],
-    thumbnail: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=800&auto=format&fit=crop',
+    id: 'course-2-full-stack',
+    title: 'Course 2: Full Stack Vibe Coding',
+    subtitle: 'Build Real Apps with Memory',
+    description: 'Move beyond static pages. Build real applications with user accounts, authentication, and databases.',
+    tags: ['Intermediate', 'Full Stack', 'Database'],
+    thumbnail: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=800&auto=format&fit=crop',
     modules: [
       {
-        id: 'mindset-1',
-        title: 'Documentation-Driven Development',
-        duration: '20 min',
-        type: 'reading',
-        content: `
-### The Idea Parking Lot
-How to resist the urge to add "Dark Mode" in the middle of building the database. Using backlog.md to stay focused.
-
-### Brains on Disk
-Why updating your .md files (instructions.md, style.md) is more important than updating your code. Your documentation is the AI's "Source of Truth."
-        `
+        id: 'c2-m1',
+        title: 'Module 1: Authentication',
+        lessons: [
+          {
+            id: 'c2-m1-l1',
+            title: '1.1 Understanding Auth Flows',
+            duration: '20 min',
+            type: 'video',
+            content: `### Sign up, Login, Reset
+            
+Understanding the security flow:
+- JWTs (JSON Web Tokens)
+- OAuth (Google/GitHub Login)
+- Session Management
+            `
+          },
+          {
+            id: 'c2-m1-l2',
+            title: '1.2 Implementing Authentication',
+            duration: '45 min',
+            type: 'lab',
+            content: `### Supabase/Firebase Integration
+            
+We will use AI to generate the boilerplate code for Firebase Authentication.
+**Task**: Connect your "Hello World" app to Firebase.
+            `
+          },
+          {
+            id: 'c2-m1-l3',
+            title: '1.3 Protected Routes',
+            duration: '30 min',
+            type: 'lab',
+            content: `### Keeping Pages Private
+            
+Learn how to redirect unauthenticated users away from the Dashboard.
+            `
+          }
+        ]
+      },
+      {
+        id: 'c2-m2',
+        title: 'Module 2: The Database',
+        lessons: [
+          {
+            id: 'c2-m2-l1',
+            title: '2.1 Database Schemas Explained',
+            duration: '25 min',
+            type: 'reading',
+            content: `### Data Modeling with AI
+            
+Ask the AI: "Design a Firestore schema for a To-Do app." specialized for NoSQL structure.
+            `
+          },
+          {
+            id: 'c2-m2-l2',
+            title: '2.2 CRUD Operations',
+            duration: '40 min',
+            type: 'lab',
+            content: `### Create, Read, Update, Delete
+            
+The core of every app. We will build functions to add items to the database and display them.
+            `
+          },
+          {
+            id: 'c2-m2-l3',
+            title: '2.3 Connecting User Profiles',
+            duration: '60 min',
+            type: 'lab',
+            content: `### Action Item: Micro-SaaS MVP
+            
+**Goal**: Build a simple To-Do list or Journal app where users can log in and save unique data.
+            `
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'course-3-expert',
+    title: 'Course 3: Expert Vibe Coding',
+    subtitle: 'Context Engineering & Agents',
+    description: 'Master the secret sauce: Architecting complex AI systems, managing token limits, and building autonomous agents.',
+    tags: ['Advanced', 'Agents', 'RAG'],
+    thumbnail: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=800&auto=format&fit=crop',
+    modules: [
+      {
+        id: 'c3-m1',
+        title: 'Module 1: The Context Engineer',
+        lessons: [
+          {
+            id: 'c3-m1-l1',
+            title: '1.1 What is Context Engineering?',
+            duration: '20 min',
+            type: 'reading',
+            content: 'Beyond simple prompt engineering. How to structure massive context for the AI.'
+          },
+          {
+            id: 'c3-m1-l2',
+            title: '1.2 Managing Token Limits',
+            duration: '25 min',
+            type: 'video',
+            content: 'Understanding how much memory your AI has and how to optimize it.'
+          },
+          {
+            id: 'c3-m1-l3',
+            title: '1.3 System Prompts vs User Prompts',
+            duration: '30 min',
+            type: 'lab',
+            content: 'Crafting the "God Mode" system instructions that define how your agent behaves.'
+          }
+        ]
+      },
+      {
+        id: 'c3-m2',
+        title: 'Module 2: Building Agents & Swarms',
+        lessons: [
+          {
+            id: 'c3-m2-l1',
+            title: '2.1 Structuring Complex Logic',
+            duration: '35 min',
+            type: 'reading',
+            content: 'Chain-of-Thought prompting and multi-step reasoning.'
+          },
+          {
+            id: 'c3-m2-l2',
+            title: '2.2 Feeding Data (RAG)',
+            duration: '45 min',
+            type: 'lab',
+            content: 'Retrieval Augmented Generation: Giving your AI access to external documentation.'
+          },
+          {
+            id: 'c3-m2-l3',
+            title: '2.3 Creating an Agent Swarm',
+            duration: '90 min',
+            type: 'lab',
+            content: `### Action Item: Specialized AI Assistant
+            
+**Goal**: Build a "Research Agent" or "Coding Buddy" that follows a strict system persona and has access to specific docs.
+            `
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'course-4-marketing',
+    title: 'Course 4: Content Automation',
+    subtitle: 'Scale Your Output with AI',
+    description: 'Solve the distribution problem. Leverage AI to create content at scale, from SEO blogs to automated social posts.',
+    tags: ['Marketing', 'Automation', 'Growth'],
+    thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800&auto=format&fit=crop',
+    modules: [
+      {
+        id: 'c4-m1',
+        title: 'Module 1: Modern Marketing Stack',
+        lessons: [
+          { id: 'c4-m1-l1', title: '1.1 SEO in an AI-Search World', duration: '20 min', type: 'reading', content: 'How search is changing with Perplexity and SearchGPT.' },
+          { id: 'c4-m1-l2', title: '1.2 Defining Content Pillars', duration: '25 min', type: 'video', content: 'Structuring your niche authority.' }
+        ]
+      },
+      {
+        id: 'c4-m2',
+        title: 'Module 2: Content Automation',
+        lessons: [
+          { id: 'c4-m2-l1', title: '2.1 Building the Content Engine', duration: '30 min', type: 'lab', content: 'Automating tweets and LinkedIn posts.' },
+          { id: 'c4-m2-l2', title: '2.2 Video & Image Gen', duration: '40 min', type: 'lab', content: 'Midjourney and Runway workflows.' },
+          { id: 'c4-m2-l3', title: '2.3 Webhooks & Zapier', duration: '60 min', type: 'lab', content: '**Action Item**: Turn 1 YouTube video into 3 Tweets and a LinkedIn post automatically.' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'course-5-strategy',
+    title: 'Course 5: Tools & Research',
+    subtitle: 'Brand Growth & High-Level Strategy',
+    description: 'Use AI for deep market research, competitive analysis, and building a consistent brand voice.',
+    tags: ['Strategy', 'Research', 'Business'],
+    thumbnail: 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop',
+    modules: [
+      {
+        id: 'c5-m1',
+        title: 'Module 1: Deep Research',
+        lessons: [
+          { id: 'c5-m1-l1', title: '1.1 Perplexity Market Analysis', duration: '20 min', type: 'video', content: 'Deep diving into market trends.' },
+          { id: 'c5-m1-l2', title: '1.2 Competitor Analysis', duration: '30 min', type: 'lab', content: 'Spying on the competition with AI.' }
+        ]
+      },
+      {
+        id: 'c5-m2',
+        title: 'Module 2: Brand & Growth',
+        lessons: [
+          { id: 'c5-m2-l1', title: '2.1 Consistent Branding', duration: '25 min', type: 'reading', content: 'Maintaining voice and visuals.' },
+          { id: 'c5-m2-l2', title: '2.2 Growth Hacking 2026', duration: '35 min', type: 'video', content: 'New tactics for a new era.' },
+          { id: 'c5-m2-l3', title: '2.3 Building a Second Brain', duration: '60 min', type: 'lab', content: '**Action Item**: Create a "Brand Bible" and 3-month growth plan.' }
+        ]
       }
     ]
   }

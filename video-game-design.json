@@ -1,0 +1,123 @@
+{
+    "design-system": {
+        "name": "Vibe Dev Retro Pixel IDE",
+        "version": "1.0.0",
+        "theme": "8-bit Retro Game UI",
+        "colors": {
+            "palette": {
+                "primary-orange": "#ff7f00",
+                "primary-yellow": "#ffbf00",
+                "primary-green": "#00a800",
+                "primary-blue": "#007fff",
+                "background-dark-blue": "#141b3a",
+                "background-black": "#000000",
+                "text-white": "#ffffff",
+                "text-yellow": "#ffff00",
+                "border-black": "#000000",
+                "accent-cream": "#f0e0c0"
+            },
+            "syntax-highlighting": {
+                "keyword": "#ff7f00",
+                "string": "#00a800",
+                "function": "#007fff",
+                "comment": "#808080",
+                "variable": "#ffbf00",
+                "constant": "#f0e0c0"
+            }
+        },
+        "typography": {
+            "font-family": {
+                "heading": "'Press Start 2P', cursive",
+                "body": "'Pixelify Sans', monospace",
+                "code": "'Pixelify Sans', monospace"
+            },
+            "font-size": {
+                "small": "12px",
+                "medium": "16px",
+                "large": "24px",
+                "xlarge": "32px"
+            }
+        },
+        "borders": {
+            "pixel-thick": "4px solid #000000",
+            "pixel-thin": "2px solid #000000",
+            "pixel-radius": "0px"
+        },
+        "components": {
+            "app-container": {
+                "background-color": "#141b3a",
+                "font-family": "'Pixelify Sans', monospace",
+                "color": "#ffffff"
+            },
+            "header": {
+                "background-color": "#141b3a",
+                "border-bottom": "4px solid #000000",
+                "title-style": {
+                    "font-family": "'Press Start 2P', cursive",
+                    "font-size": "32px",
+                    "color": "#ff7f00",
+                    "text-shadow": "4px 4px #000000"
+                }
+            },
+            "sidebar": {
+                "background-color": "#0a0e22",
+                "border-right": "4px solid #000000",
+                "item-style": {
+                    "padding": "8px",
+                    "color": "#ffffff",
+                    "hover": {
+                        "background-color": "#ff7f00",
+                        "color": "#000000"
+                    }
+                }
+            },
+            "editor": {
+                "background-color": "#000000",
+                "font-family": "'Pixelify Sans', monospace",
+                "font-size": "16px",
+                "color": "#ffffff",
+                "cursor-style": {
+                    "border-left": "2px solid #ff7f00",
+                    "animation": "blink 1s step-end infinite"
+                }
+            },
+            "panel": {
+                "background-color": "#141b3a",
+                "border": "4px solid #000000",
+                "header-style": {
+                    "background-color": "#ff7f00",
+                    "color": "#000000",
+                    "padding": "4px",
+                    "font-family": "'Press Start 2P', cursive",
+                    "font-size": "16px"
+                }
+            },
+            "button": {
+                "background-color": "#ff7f00",
+                "border": "4px solid #000000",
+                "color": "#000000",
+                "padding": "12px 24px",
+                "font-family": "'Press Start 2P', cursive",
+                "font-size": "16px",
+                "text-transform": "uppercase",
+                "box-shadow": "4px 4px #000000",
+                "hover": {
+                    "background-color": "#ffbf00",
+                    "box-shadow": "2px 2px #000000",
+                    "transform": "translate(2px, 2px)"
+                },
+                "active": {
+                    "background-color": "#00a800",
+                    "box-shadow": "none",
+                    "transform": "translate(4px, 4px)"
+                }
+            },
+            "terminal": {
+                "background-color": "#000000",
+                "border-top": "4px solid #000000",
+                "color": "#00a800",
+                "font-family": "'Pixelify Sans', monospace"
+            }
+        }
+    }
+}

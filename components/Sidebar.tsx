@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ViewState } from '../App';
-import { Home, Terminal, Layout, ShieldCheck, X, Sparkles, Sun, Moon, Zap } from 'lucide-react';
+import { Home, Terminal, Layout, ShieldCheck, X, Sparkles, Sun, Moon, Zap, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
@@ -13,7 +13,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onCloseMobile, isDarkMode, onToggleTheme }) => {
-  const { user, userProfile, signInWithGoogle } = useAuth();
+  const { user, userProfile, signInWithGoogle, logout } = useAuth();
   const navItemClass = (isActive: boolean) =>
     `flex items-center w-full px-5 py-3.5 mb-2 rounded-[14px] transition-all duration-300 group border ${isActive
       ? 'bg-gradient-to-r from-slate-100/80 to-transparent dark:from-white/10 border-l-[3px] border-l-[#38BDF8] border-t-white/50 dark:border-t-white/5 border-r-transparent border-b-transparent text-slate-900 dark:text-white shadow-[0px_4px_20px_rgba(0,0,0,0.05)] dark:shadow-[0px_4px_20px_rgba(0,0,0,0.2)]'
@@ -101,7 +101,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onClo
           >
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-display font-bold text-slate-900 dark:text-white text-sm">Vibe Streak</h3>
-              <span className="text-[10px] font-bold text-indigo-600 dark:text-[#818CF8] bg-indigo-100 dark:bg-indigo-500/10 px-2 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/20">⚡ {userProfile?.streakDays || 1} Days</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-indigo-600 dark:text-[#818CF8] bg-indigo-100 dark:bg-indigo-500/10 px-2 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/20">⚡ {userProfile?.streakDays || 1} Days</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); logout(); }}
+                  className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 hover:text-red-500 transition-colors rounded-full"
+                  title="Sign Out"
+                >
+                  <LogOut size={14} />
+                </button>
+              </div>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-[#94A3B8] mb-3">Level {userProfile?.level || 1} • {userProfile?.xp || 0} XP</p>
             <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">

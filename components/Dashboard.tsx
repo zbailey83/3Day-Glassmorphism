@@ -201,10 +201,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
                 <Terminal className="text-indigo-500" size={22} />
               </div>
               <div>
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-1">Execution & Shipping</h4>
-                <p className="text-xs text-slate-500 dark:text-[#94A3B8] mb-3">Module 3 • Cursor Composer Mastery</p>
+                <h4 className="font-semibold text-slate-900 dark:text-white mb-1">Hello World in AI Era</h4>
+                <p className="text-xs text-slate-500 dark:text-[#94A3B8] mb-3">Module 1 • Lesson 1.3</p>
                 <button
-                  onClick={() => onNavigate({ type: 'course', courseId: 'vibe-coding-2026', moduleId: 'm3-execution' })}
+                  onClick={() => onNavigate({ type: 'course', courseId: 'course-1-vibe-coding-101', moduleId: 'c1-m1-l3' })}
                   className="text-indigo-500 text-sm font-bold hover:text-indigo-400 transition-colors flex items-center group"
                 >
                   Open Terminal <ArrowRight size={14} className="ml-1 transform group-hover:translate-x-1 transition-transform" />

@@ -7,13 +7,19 @@ export interface QuizQuestion {
     explanation: string;
 }
 
-export interface Module {
+export interface Lesson {
     id: string;
     title: string;
     duration: string;
     content: string;
     type: 'video' | 'reading' | 'lab';
     quiz?: QuizQuestion[];
+}
+
+export interface Module {
+    id: string;
+    title: string;
+    lessons: Lesson[];
 }
 
 export interface Course {
@@ -57,6 +63,7 @@ export interface UserProfile {
     streakDays: number;
     lastLogin: any; // Firestore Timestamp
     enrolledCourses: string[]; // course IDs
+    courseProgress: UserProgress[]; // Detailed progress
     savedProjects: string[]; // gallery IDs
     likedProjects: string[]; // gallery IDs
 }

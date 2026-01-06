@@ -75,8 +75,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
                 bio,
                 location,
                 role,
-                photoURL,
-                bannerURL
+                photoURL: photoURL || null,
+                bannerURL: bannerURL || null
             };
             await updateUserProfile(user.uid, updates);
             console.log("Firestore updated");

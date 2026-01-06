@@ -24,7 +24,8 @@ export const ProfilePage: React.FC = () => {
         level: 1,
         streakDays: 1,
         lastLogin: new Date(),
-        enrolledCourses: []
+        enrolledCourses: [],
+        courseProgress: []
     };
 
     useEffect(() => {

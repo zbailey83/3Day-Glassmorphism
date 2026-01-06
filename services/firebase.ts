@@ -46,6 +46,7 @@ export const syncUserProfile = async (user: any) => {
             streakDays: 1,
             lastLogin: serverTimestamp(),
             enrolledCourses: [],
+            courseProgress: [],
             savedProjects: [],
             likedProjects: []
         };
@@ -149,7 +150,24 @@ export const getProjectsByIds = async (ids: string[]) => {
 
 export const updateUserProfile = async (uid: string, data: Partial<UserProfile>) => {
     const userRef = doc(db, 'users', uid);
-    await updateDoc(userRef, data);
+
+    // Safety: Remove undefined fields which strictly crash Firestore
+    const cleanData = Object.entries(data).reduce((acc, [key, value]) => {
+        if (value !== undefined) {
+            acc[key] = value;
+        }
+        return acc;
+    }, {} as any);
+
+    try {
+        await updateDoc(userRef, cleanData);
+    } catch (error: any) {
+        console.error("Firestore Update Error:", error);
+        if (error.code === 'permission-denied') {
+            throw new Error("Permission Denied: Check your Firestore Security Rules in Firebase Console.");
+        }
+        throw error;
+    }
 };
 
 export const toggleProjectLike = async (userId: string, projectId: string, isLiked: boolean) => {
@@ -186,5 +204,61 @@ export const toggleProjectSave = async (userId: string, projectId: string, isSav
         await updateDoc(userRef, {
             savedProjects: arrayUnion(projectId)
         });
+    }
+};
+
+export const enrollCourse = async (userId: string, courseId: string) => {
+    const userRef = doc(db, 'users', userId);
+
+    // Create looking initial progress
+    const newProgress = {
+        courseId,
+        completedModules: [],
+        lastPlayed: new Date()
+    };
+
+    await updateDoc(userRef, {
+        enrolledCourses: arrayUnion(courseId),
+        courseProgress: arrayUnion(newProgress)
+    });
+};
+
+export const updateModuleProgress = async (userId: string, courseId: string, moduleId: string) => {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+        const data = userSnap.data() as UserProfile;
+        const progressList = data.courseProgress || [];
+
+        const existingIndex = progressList.findIndex(p => p.courseId === courseId);
+
+        if (existingIndex >= 0) {
+            // Update existing
+            const updatedEntry = {
+                ...progressList[existingIndex],
+                completedModules: [...new Set([...progressList[existingIndex].completedModules, moduleId])],
+                lastPlayed: new Date()
+            };
+
+            const newProgressList = [...progressList];
+            newProgressList[existingIndex] = updatedEntry;
+
+            await updateDoc(userRef, {
+                courseProgress: newProgressList,
+                lastLogin: serverTimestamp()
+            });
+        } else {
+            // Create new if missing (fallback)
+            const newEntry = {
+                courseId,
+                completedModules: [moduleId],
+                lastPlayed: new Date()
+            };
+            await updateDoc(userRef, {
+                enrolledCourses: arrayUnion(courseId),
+                courseProgress: arrayUnion(newEntry)
+            });
+        }
     }
 };
