@@ -152,12 +152,16 @@ export const updateUserProfile = async (uid: string, data: Partial<UserProfile>)
     const userRef = doc(db, 'users', uid);
 
     // Safety: Remove undefined fields which strictly crash Firestore
-    const cleanData = Object.entries(data).reduce((acc, [key, value]) => {
-        if (value !== undefined) {
-            acc[key] = value;
+    const cleanData: Record<string, any> = {};
+
+    Object.keys(data).forEach(key => {
+        const val = (data as any)[key];
+        if (val !== undefined) {
+            cleanData[key] = val;
         }
-        return acc;
-    }, {} as any);
+    });
+
+    console.log("Updating user profile:", uid, cleanData);
 
     try {
         await updateDoc(userRef, cleanData);
