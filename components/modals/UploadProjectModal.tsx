@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, UploadCloud, Loader2, Image as ImageIcon } from 'lucide-react';
-import { uploadFile, createGalleryItem, addXP } from '../../services/firebase';
+import { X, UploadCloud, Loader2, Image as ImageIcon, AlertCircle, RefreshCw, HelpCircle, ExternalLink } from 'lucide-react';
+import { uploadFile, createGalleryItem, addXP, UploadError } from '../../services/firebase';
 import { useAuth } from '../../hooks/useAuth';
 import { GalleryItem } from '../../types';
 
@@ -17,6 +17,8 @@ export const UploadProjectModal: React.FC<UploadProjectModalProps> = ({ onClose,
     const [file, setFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<number>(0);
+    const [uploadError, setUploadError] = useState<string | null>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -30,12 +32,14 @@ export const UploadProjectModal: React.FC<UploadProjectModalProps> = ({ onClose,
         if (!user || !file || !title) return;
 
         setIsUploading(true);
+        setUploadProgress(0);
+        setUploadError(null);
         console.log("Starting upload process...");
         try {
             // 1. Upload Image
             console.log("Uploading image...");
             const path = `gallery/${user.uid}/${Date.now()}_${file.name}`;
-            const imageUrl = await uploadFile(file, path);
+            const imageUrl = await uploadFile(file, path, setUploadProgress);
             console.log("Image uploaded, URL:", imageUrl);
 
             // 2. Create Firestore Doc
@@ -63,10 +67,23 @@ export const UploadProjectModal: React.FC<UploadProjectModalProps> = ({ onClose,
             onClose();
         } catch (error: any) {
             console.error("Upload failed in djangoUpload:", error);
-            alert(`Upload failed: ${error.message || error}`);
+
+            // Handle structured upload errors
+            if (error && typeof error === 'object' && 'type' in error) {
+                const uploadError = error as UploadError;
+                setUploadError(`${uploadError.message}\n\n${uploadError.actionableSteps}`);
+            } else {
+                setUploadError(`Upload failed: ${error.message || error}`);
+            }
         } finally {
             setIsUploading(false);
         }
+    };
+
+    const handleRetry = () => {
+        setUploadError(null);
+        setUploadProgress(0);
+        djangoUpload();
     };
 
     return (
@@ -112,6 +129,30 @@ export const UploadProjectModal: React.FC<UploadProjectModalProps> = ({ onClose,
                         </div>
                     </div>
 
+                    {/* Help Text */}
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3">
+                        <div className="flex items-start gap-2">
+                            <HelpCircle size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <p className="text-xs text-blue-700 dark:text-blue-300">
+                                    <strong>File size limit:</strong> Maximum 5MB per image. Supported formats: PNG, JPG, JPEG, GIF, WebP.
+                                </p>
+                                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                                    <strong>Upload issues?</strong> If uploads hang or fail, check the{' '}
+                                    <a
+                                        href="SETUP.md"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="underline hover:text-blue-800 dark:hover:text-blue-200 inline-flex items-center gap-1"
+                                    >
+                                        setup guide <ExternalLink size={10} />
+                                    </a>
+                                    {' '}for CORS configuration instructions.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Form Fields */}
                     <div className="space-y-4">
                         <div>
@@ -146,23 +187,84 @@ export const UploadProjectModal: React.FC<UploadProjectModalProps> = ({ onClose,
                             />
                         </div>
                     </div>
+
+                    {/* Upload Progress Bar */}
+                    {isUploading && (
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="font-bold text-slate-700 dark:text-slate-300">Uploading...</span>
+                                <span className="text-slate-500 dark:text-slate-400">{Math.round(uploadProgress)}%</span>
+                            </div>
+                            <div className="w-full h-2 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-[#38BDF8] to-[#6366F1] transition-all duration-300 ease-out"
+                                    style={{ width: `${uploadProgress}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Error Display */}
+                    {uploadError && (
+                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                            <div className="flex items-start gap-3">
+                                <AlertCircle size={20} className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-red-900 dark:text-red-200 mb-1">Upload Failed</h4>
+                                    <p className="text-sm text-red-700 dark:text-red-300 whitespace-pre-line">{uploadError}</p>
+                                    <div className="mt-2 pt-2 border-t border-red-200 dark:border-red-800">
+                                        <p className="text-xs text-red-600 dark:text-red-400">
+                                            <strong>Common solutions:</strong>
+                                        </p>
+                                        <ul className="text-xs text-red-600 dark:text-red-400 list-disc list-inside mt-1 space-y-0.5">
+                                            <li>Check your internet connection</li>
+                                            <li>Ensure file is under 5MB</li>
+                                            <li>Try a different image format</li>
+                                            <li>Clear browser cache and retry</li>
+                                            <li>
+                                                See{' '}
+                                                <a
+                                                    href="SETUP.md"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="underline hover:text-red-700 dark:hover:text-red-300"
+                                                >
+                                                    troubleshooting guide
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="p-6 border-t border-slate-200 dark:border-white/5 flex justify-end gap-3">
                     <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">
                         Cancel
                     </button>
-                    <button
-                        onClick={djangoUpload}
-                        disabled={!file || !title || isUploading}
-                        className={`px-6 py-2.5 rounded-xl font-bold text-white flex items-center shadow-lg transition-all ${!file || !title || isUploading
-                            ? 'bg-slate-300 dark:bg-white/10 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-[#38BDF8] to-[#6366F1] hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:scale-105 active:scale-95'
-                            }`}
-                    >
-                        {isUploading ? <Loader2 size={18} className="animate-spin mr-2" /> : <UploadCloud size={18} className="mr-2" />}
-                        {isUploading ? 'Uploading...' : 'Publish Project'}
-                    </button>
+                    {uploadError ? (
+                        <button
+                            onClick={handleRetry}
+                            className="px-6 py-2.5 rounded-xl font-bold text-white flex items-center shadow-lg transition-all bg-gradient-to-r from-[#38BDF8] to-[#6366F1] hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:scale-105 active:scale-95"
+                        >
+                            <RefreshCw size={18} className="mr-2" />
+                            Retry Upload
+                        </button>
+                    ) : (
+                        <button
+                            onClick={djangoUpload}
+                            disabled={!file || !title || isUploading}
+                            className={`px-6 py-2.5 rounded-xl font-bold text-white flex items-center shadow-lg transition-all ${!file || !title || isUploading
+                                ? 'bg-slate-300 dark:bg-white/10 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-[#38BDF8] to-[#6366F1] hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:scale-105 active:scale-95'
+                                }`}
+                        >
+                            {isUploading ? <Loader2 size={18} className="animate-spin mr-2" /> : <UploadCloud size={18} className="mr-2" />}
+                            {isUploading ? 'Uploading...' : 'Publish Project'}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

@@ -106,7 +106,10 @@ export const ProfilePage: React.FC = () => {
             {isEditModalOpen && createPortal(
                 <EditProfileModal
                     onClose={() => setIsEditModalOpen(false)}
-                    onUpdateComplete={() => window.location.reload()}
+                    onUpdateComplete={() => {
+                        // Profile updates automatically via AuthContext Firestore listener
+                        // No need to reload the page
+                    }}
                     initialData={userProfile || defaultProfile}
                 />,
                 document.body

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, UploadCloud, Loader2, Camera, User, MapPin, Briefcase, FileText } from 'lucide-react';
-import { uploadFile, updateUserProfile, auth } from '../../services/firebase';
+import { X, UploadCloud, Loader2, Camera, User, MapPin, Briefcase, FileText, AlertCircle, RefreshCw, HelpCircle, ExternalLink } from 'lucide-react';
+import { uploadFile, updateUserProfile, auth, UploadError } from '../../services/firebase';
 import { updateProfile } from 'firebase/auth';
 import { useAuth } from '../../hooks/useAuth';
 import { UserProfile } from '../../types';
@@ -25,6 +25,9 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
     const [bannerPreviewUrl, setBannerPreviewUrl] = useState<string | null>(initialData.bannerURL || null);
 
     const [isSaving, setIsSaving] = useState(false);
+    const [avatarUploadProgress, setAvatarUploadProgress] = useState<number>(0);
+    const [bannerUploadProgress, setBannerUploadProgress] = useState<number>(0);
+    const [uploadError, setUploadError] = useState<string | null>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -46,26 +49,45 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
         if (!user) return;
 
         setIsSaving(true);
+        setUploadError(null);
+        setAvatarUploadProgress(0);
+        setBannerUploadProgress(0);
         console.log("Starting profile update...");
 
         try {
             let photoURL = initialData.photoURL ?? null;
             let bannerURL = initialData.bannerURL ?? null;
 
+            // Handle concurrent uploads (avatar + banner)
+            const uploadPromises: Promise<void>[] = [];
+
             // 1. Upload new avatar if selected
             if (avatarFile) {
                 console.log("Uploading avatar...");
-                const path = `avatars/${user.uid}/${Date.now()}_${avatarFile.name}`;
-                photoURL = await uploadFile(avatarFile, path);
-                console.log("Avatar uploaded:", photoURL);
+                const avatarPath = `avatars/${user.uid}/${Date.now()}_${avatarFile.name}`;
+                const avatarPromise = uploadFile(avatarFile, avatarPath, setAvatarUploadProgress)
+                    .then(url => {
+                        photoURL = url;
+                        console.log("Avatar uploaded:", photoURL);
+                    });
+                uploadPromises.push(avatarPromise);
             }
 
             // 2. Upload new banner if selected
             if (bannerFile) {
                 console.log("Uploading banner...");
-                const path = `banners/${user.uid}/${Date.now()}_${bannerFile.name}`;
-                bannerURL = await uploadFile(bannerFile, path);
-                console.log("Banner uploaded:", bannerURL);
+                const bannerPath = `banners/${user.uid}/${Date.now()}_${bannerFile.name}`;
+                const bannerPromise = uploadFile(bannerFile, bannerPath, setBannerUploadProgress)
+                    .then(url => {
+                        bannerURL = url;
+                        console.log("Banner uploaded:", bannerURL);
+                    });
+                uploadPromises.push(bannerPromise);
+            }
+
+            // Wait for all uploads to complete concurrently
+            if (uploadPromises.length > 0) {
+                await Promise.all(uploadPromises);
             }
 
             // 3. Update Firestore Profile
@@ -96,11 +118,28 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
             onClose();
         } catch (error: any) {
             console.error("Update failed detailed:", error);
-            // Show visible alert for user
-            alert(`Failed to update profile: ${error.message || error}`);
+
+            // Handle structured upload errors
+            if (error && typeof error === 'object' && 'type' in error) {
+                const uploadError = error as UploadError;
+                setUploadError(`${uploadError.message}\n\n${uploadError.actionableSteps}`);
+            } else {
+                setUploadError(`Failed to update profile: ${error.message || error}`);
+            }
+
+            // Reset progress on error
+            setAvatarUploadProgress(0);
+            setBannerUploadProgress(0);
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const handleRetry = () => {
+        setUploadError(null);
+        setAvatarUploadProgress(0);
+        setBannerUploadProgress(0);
+        handleSave();
     };
 
     return (
@@ -122,6 +161,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
                             accept="image/*"
                             onChange={handleBannerChange}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            disabled={isSaving}
                         />
                         {bannerPreviewUrl ? (
                             <img src={bannerPreviewUrl} alt="Banner" className="w-full h-full object-cover" />
@@ -129,11 +169,22 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
                             <div className="w-full h-full bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] opacity-50 block"></div>
                         )}
 
-                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="bg-black/50 backdrop-blur-md px-4 py-2 rounded-full text-white flex items-center font-medium text-sm">
-                                <UploadCloud size={16} className="mr-2" /> Change Banner
+                        {bannerUploadProgress > 0 && bannerUploadProgress < 100 && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                <div className="text-center">
+                                    <Loader2 size={32} className="text-white animate-spin mx-auto mb-2" />
+                                    <span className="text-white text-sm font-bold">{Math.round(bannerUploadProgress)}%</span>
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {!isSaving && (
+                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="bg-black/50 backdrop-blur-md px-4 py-2 rounded-full text-white flex items-center font-medium text-sm">
+                                    <UploadCloud size={16} className="mr-2" /> Change Banner
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="px-6 pb-6">
@@ -145,12 +196,23 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
                                     accept="image/*"
                                     onChange={handleFileChange}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    disabled={isSaving}
                                 />
                                 <div className="w-24 h-24 rounded-full border-4 border-white dark:border-[#0F172A] shadow-lg overflow-hidden relative bg-[#0F172A]">
                                     <img src={previewUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid}`} alt="Avatar" className="w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Camera size={24} className="text-white" />
-                                    </div>
+                                    {avatarUploadProgress > 0 && avatarUploadProgress < 100 && (
+                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                            <div className="text-center">
+                                                <Loader2 size={24} className="text-white animate-spin mx-auto mb-1" />
+                                                <span className="text-white text-xs font-bold">{Math.round(avatarUploadProgress)}%</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {!isSaving && (
+                                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Camera size={24} className="text-white" />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="absolute bottom-0 right-0 bg-[#38BDF8] p-1.5 rounded-full text-white shadow-md border-2 border-white dark:border-[#0F172A]">
                                     <Camera size={12} />
@@ -160,6 +222,30 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
 
                         {/* Form Fields */}
                         <div className="space-y-4">
+                            {/* Help Text */}
+                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3">
+                                <div className="flex items-start gap-2">
+                                    <HelpCircle size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                                            <strong>Image uploads:</strong> Maximum 5MB per image. Click on avatar or banner to change.
+                                        </p>
+                                        <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                                            <strong>Having issues?</strong> Check the{' '}
+                                            <a
+                                                href="SETUP.md"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="underline hover:text-blue-800 dark:hover:text-blue-200 inline-flex items-center gap-1"
+                                            >
+                                                setup guide <ExternalLink size={10} />
+                                            </a>
+                                            {' '}for troubleshooting.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="flex items-center text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
                                     <User size={14} className="mr-2 text-slate-400" /> Display Name
@@ -211,6 +297,41 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
                                 />
                             </div>
                         </div>
+
+                        {/* Error Display */}
+                        {uploadError && (
+                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mt-4">
+                                <div className="flex items-start gap-3">
+                                    <AlertCircle size={20} className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <h4 className="font-bold text-red-900 dark:text-red-200 mb-1">Update Failed</h4>
+                                        <p className="text-sm text-red-700 dark:text-red-300 whitespace-pre-line">{uploadError}</p>
+                                        <div className="mt-2 pt-2 border-t border-red-200 dark:border-red-800">
+                                            <p className="text-xs text-red-600 dark:text-red-400">
+                                                <strong>Common solutions:</strong>
+                                            </p>
+                                            <ul className="text-xs text-red-600 dark:text-red-400 list-disc list-inside mt-1 space-y-0.5">
+                                                <li>Check your internet connection</li>
+                                                <li>Ensure images are under 5MB each</li>
+                                                <li>Try uploading one image at a time</li>
+                                                <li>Clear browser cache and retry</li>
+                                                <li>
+                                                    See{' '}
+                                                    <a
+                                                        href="SETUP.md"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="underline hover:text-red-700 dark:hover:text-red-300"
+                                                    >
+                                                        troubleshooting guide
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -218,17 +339,27 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
                     <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">
                         Cancel
                     </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className={`px-6 py-2.5 rounded-xl font-bold text-white flex items-center shadow-lg transition-all ${isSaving
-                            ? 'bg-slate-300 dark:bg-white/10 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-[#38BDF8] to-[#6366F1] hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:scale-105 active:scale-95'
-                            }`}
-                    >
-                        {isSaving && <Loader2 size={18} className="animate-spin mr-2" />}
-                        {isSaving ? 'Saving...' : 'Save Changes'}
-                    </button>
+                    {uploadError ? (
+                        <button
+                            onClick={handleRetry}
+                            className="px-6 py-2.5 rounded-xl font-bold text-white flex items-center shadow-lg transition-all bg-gradient-to-r from-[#38BDF8] to-[#6366F1] hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:scale-105 active:scale-95"
+                        >
+                            <RefreshCw size={18} className="mr-2" />
+                            Retry Update
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className={`px-6 py-2.5 rounded-xl font-bold text-white flex items-center shadow-lg transition-all ${isSaving
+                                ? 'bg-slate-300 dark:bg-white/10 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-[#38BDF8] to-[#6366F1] hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:scale-105 active:scale-95'
+                                }`}
+                        >
+                            {isSaving && <Loader2 size={18} className="animate-spin mr-2" />}
+                            {isSaving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

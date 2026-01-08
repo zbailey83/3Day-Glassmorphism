@@ -75,7 +75,27 @@ import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase
 import { collection, addDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { GalleryItem } from '../types';
 
-export const uploadFile = async (file: File, path: string) => {
+// Upload error types
+export enum UploadErrorType {
+    CORS = 'CORS',
+    NETWORK = 'NETWORK',
+    TIMEOUT = 'TIMEOUT',
+    PERMISSION = 'PERMISSION',
+    UNKNOWN = 'UNKNOWN'
+}
+
+export interface UploadError {
+    type: UploadErrorType;
+    message: string;
+    actionableSteps: string;
+    originalError?: any;
+}
+
+const createUploadError = (type: UploadErrorType, message: string, actionableSteps: string, originalError?: any): UploadError => {
+    return { type, message, actionableSteps, originalError };
+};
+
+export const uploadFile = async (file: File, path: string, onProgress?: (progress: number) => void) => {
     return new Promise<string>((resolve, reject) => {
         console.log(`Starting upload to ${path} (${file.size} bytes)...`);
         const storageRef = ref(storage, path);
@@ -89,9 +109,19 @@ export const uploadFile = async (file: File, path: string) => {
             uploadTask.cancel();
             console.error("Upload timeout. Started:", uploadStarted);
             if (!uploadStarted) {
-                reject(new Error("Upload failed to start. This is likely a CORS issue. Please run 'gsutil cors set cors.json gs://<your-bucket>'"));
+                const corsError = createUploadError(
+                    UploadErrorType.CORS,
+                    "Upload failed to start. This is likely a CORS issue.",
+                    "Please configure CORS on Firebase Storage by running: gsutil cors set cors.json gs://<your-bucket>. See SETUP.md for detailed instructions."
+                );
+                reject(corsError);
             } else {
-                reject(new Error("Upload timed out (slow network)."));
+                const timeoutError = createUploadError(
+                    UploadErrorType.TIMEOUT,
+                    "Upload timed out after 60 seconds.",
+                    "Please try uploading a smaller file or check your internet connection and try again."
+                );
+                reject(timeoutError);
             }
         }, 60000); // 60s
 
@@ -100,11 +130,50 @@ export const uploadFile = async (file: File, path: string) => {
                 uploadStarted = true;
                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                 console.log(`Upload is ${progress}% done`);
+
+                // Call progress callback if provided
+                if (onProgress) {
+                    onProgress(progress);
+                }
             },
             (error) => {
                 clearTimeout(timeoutId);
                 console.error("Upload error specific:", error.code, error.message);
-                reject(error);
+
+                // Categorize the error
+                let uploadError: UploadError;
+
+                if (error.code === 'storage/unauthorized') {
+                    uploadError = createUploadError(
+                        UploadErrorType.PERMISSION,
+                        "Permission denied. You don't have access to upload files.",
+                        "Please check Firebase Security Rules or try logging out and back in. Contact support if the issue persists.",
+                        error
+                    );
+                } else if (error.code === 'storage/canceled') {
+                    uploadError = createUploadError(
+                        UploadErrorType.NETWORK,
+                        "Upload was canceled.",
+                        "Please try uploading again.",
+                        error
+                    );
+                } else if (error.code === 'storage/unknown' || error.message?.includes('network')) {
+                    uploadError = createUploadError(
+                        UploadErrorType.NETWORK,
+                        "Upload failed due to network issues.",
+                        "Please check your internet connection and try again.",
+                        error
+                    );
+                } else {
+                    uploadError = createUploadError(
+                        UploadErrorType.UNKNOWN,
+                        `Upload failed: ${error.message}`,
+                        "Please try again. If the problem persists, contact support.",
+                        error
+                    );
+                }
+
+                reject(uploadError);
             },
             async () => {
                 clearTimeout(timeoutId);
@@ -113,7 +182,13 @@ export const uploadFile = async (file: File, path: string) => {
                     console.log("File available at", downloadURL);
                     resolve(downloadURL);
                 } catch (e) {
-                    reject(e);
+                    const downloadError = createUploadError(
+                        UploadErrorType.UNKNOWN,
+                        "Upload completed but failed to get download URL.",
+                        "Please try again or contact support.",
+                        e
+                    );
+                    reject(downloadError);
                 }
             }
         );

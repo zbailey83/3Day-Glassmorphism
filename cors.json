@@ -5,19 +5,15 @@
         ],
         "method": [
             "GET",
-            "PUT",
             "POST",
+            "PUT",
             "DELETE",
-            "HEAD",
-            "OPTIONS"
+            "HEAD"
         ],
+        "maxAgeSeconds": 3600,
         "responseHeader": [
             "Content-Type",
-            "Authorization",
-            "Content-Length",
-            "User-Agent",
-            "x-goog-resumable"
-        ],
-        "maxAgeSeconds": 3600
+            "Authorization"
+        ]
     }
 ]
