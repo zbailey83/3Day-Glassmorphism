@@ -90,7 +90,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
                 await Promise.all(uploadPromises);
             }
 
-            // 3. Update Firestore Profile
+            // 3. Update Firestore Profile with timeout
             console.log("Updating Firestore profile...");
             const updates: Partial<UserProfile> = {
                 displayName,
@@ -100,16 +100,28 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
                 photoURL,
                 bannerURL
             };
-            await updateUserProfile(user.uid, updates);
+
+            const firestoreUpdatePromise = updateUserProfile(user.uid, updates);
+            const firestoreTimeout = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('Firestore update timed out after 30 seconds')), 30000)
+            );
+
+            await Promise.race([firestoreUpdatePromise, firestoreTimeout]);
             console.log("Firestore updated");
 
             // 4. Update Firebase Auth Profile (for consistency across app)
-            if (auth.currentUser) {
+            const currentUser = auth.currentUser;
+            if (currentUser) {
                 console.log("Updating Auth profile...");
-                await updateProfile(auth.currentUser, {
+                const authUpdatePromise = updateProfile(currentUser, {
                     displayName: displayName,
                     photoURL: photoURL
                 });
+                const authTimeout = new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error('Auth profile update timed out after 15 seconds')), 15000)
+                );
+
+                await Promise.race([authUpdatePromise, authTimeout]);
                 console.log("Auth profile updated");
             }
 

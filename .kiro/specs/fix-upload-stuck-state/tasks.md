@@ -52,7 +52,7 @@ This implementation plan addresses the Firebase Storage CORS issue causing uploa
     - Update UI to show progress during upload
     - _Requirements: 3.1, 3.2_
   
-  - [ ] 3.4 Write integration tests for upload modal
+  - [x] 3.4 Write integration tests for upload modal
     - Test successful upload flow with progress updates
     - Test error display and retry functionality
     - Test modal state management
