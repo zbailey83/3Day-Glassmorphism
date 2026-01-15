@@ -315,6 +315,10 @@ The quality of AI output is directly proportional to the quality of your input. 
 - A footer with social media links
 Use HTML and Tailwind CSS. The color scheme should be warm browns (#8B4513) and cream (#FFF8DC). Make it mobile-first."
 
+### Try It Yourself
+
+Want to practice crafting better prompts? [Campaign Generator]
+
 ### The CRAFT Framework
 
 Use this framework for every code-generation prompt:
@@ -616,6 +620,10 @@ Your site is live. Share the URL:
 - Post it on Twitter/X with #VibeDev2026
 - Add it to your social media bios
 - Send it to friends and family
+
+### Need Visual Assets?
+
+Want to create custom graphics or a profile image for your page? Try the [Visual Vibe Lab] to generate unique visuals that match your brand.
 
 ### Iteration Ideas
 

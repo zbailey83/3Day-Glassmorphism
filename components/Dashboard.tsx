@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Course } from '../types';
 import { ViewState } from '../App';
@@ -7,19 +7,152 @@ import { PlayCircle, Clock, ArrowRight, Zap, Terminal, Layout, ShieldCheck, Code
 import { useAuth } from '../hooks/useAuth';
 import { getLevelFromXP, getXPProgress, ACHIEVEMENTS, COURSE_MASCOTS } from '../src/data/gamification';
 import { AchievementsPanel } from './AchievementsPanel';
+import { getRecentToolUsage } from '../services/firebase';
 
 interface DashboardProps {
   courses: Course[];
   onNavigate: (view: ViewState) => void;
 }
 
+interface ToolUsageRecord {
+  id: string;
+  toolType: 'campaign' | 'image' | 'seo';
+  lessonId: string;
+  courseId: string;
+  timestamp: Date;
+  completed: boolean;
+}
+
 export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => {
   const { user, userProfile } = useAuth();
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
+  const [recentToolUsage, setRecentToolUsage] = useState<ToolUsageRecord[]>([]);
 
   const xp = userProfile?.xp || 0;
   const currentLevel = getLevelFromXP(xp);
   const xpProgress = getXPProgress(xp);
+
+  // Fetch recent tool usage
+  useEffect(() => {
+    const fetchRecentUsage = async () => {
+      if (user?.uid) {
+        const usage = await getRecentToolUsage(user.uid, 3);
+        setRecentToolUsage(usage as ToolUsageRecord[]);
+      }
+    };
+
+    fetchRecentUsage();
+  }, [user?.uid]);
+
+  // Extract tools used in enrolled courses
+  const toolsUsedInCourses = React.useMemo(() => {
+    const toolSet = new Set<'campaign' | 'image' | 'seo'>();
+
+    courses.forEach(course => {
+      course.modules.forEach(module => {
+        module.lessons.forEach(lesson => {
+          if (lesson.requiredTool) {
+            toolSet.add(lesson.requiredTool);
+          }
+        });
+      });
+    });
+
+    return Array.from(toolSet);
+  }, [courses]);
+
+  // Tool configuration
+  const allTools = [
+    {
+      id: 'campaign' as const,
+      name: 'Spec Architect',
+      description: 'The Blueprint',
+      icon: Terminal,
+      color: 'indigo',
+      onClick: () => onNavigate({ type: 'tool', toolName: 'campaign' })
+    },
+    {
+      id: 'image' as const,
+      name: 'Vibe Lab',
+      description: 'UI Logic',
+      icon: Layout,
+      color: 'cyan',
+      onClick: () => onNavigate({ type: 'tool', toolName: 'image' })
+    },
+    {
+      id: 'seo' as const,
+      name: 'Auditor',
+      description: 'Code Review',
+      icon: ShieldCheck,
+      color: 'emerald',
+      onClick: () => onNavigate({ type: 'tool', toolName: 'seo' })
+    }
+  ];
+
+  // Filter tools to only show those used in courses
+  const relevantTools = allTools.filter(tool => toolsUsedInCourses.includes(tool.id));
+
+  // Helper function to get tool color classes
+  const getToolColorClasses = (color: string) => {
+    const colorMap: Record<string, { bg: string; text: string; hover: string; shadow: string; border: string }> = {
+      indigo: {
+        bg: 'bg-indigo-500/10',
+        text: 'text-indigo-500',
+        hover: 'group-hover:bg-indigo-500',
+        shadow: 'group-hover:shadow-[0_0_20px_rgba(99,102,241,0.6)]',
+        border: 'border-indigo-500/20'
+      },
+      cyan: {
+        bg: 'bg-[#38BDF8]/10',
+        text: 'text-[#38BDF8]',
+        hover: 'group-hover:bg-[#38BDF8]',
+        shadow: 'group-hover:shadow-[0_0_20px_rgba(56,189,248,0.6)]',
+        border: 'border-[#38BDF8]/20'
+      },
+      emerald: {
+        bg: 'bg-emerald-500/10',
+        text: 'text-emerald-500',
+        hover: 'group-hover:bg-emerald-500',
+        shadow: 'group-hover:shadow-[0_0_20px_rgba(16,185,129,0.6)]',
+        border: 'border-emerald-500/20'
+      }
+    };
+    return colorMap[color] || colorMap.indigo;
+  };
+
+  // Helper to get lesson details from usage record
+  const getLessonDetails = (courseId: string, lessonId: string) => {
+    const course = courses.find(c => c.id === courseId);
+    if (!course) return null;
+
+    for (const module of course.modules) {
+      const lesson = module.lessons.find(l => l.id === lessonId);
+      if (lesson) {
+        return {
+          courseTitle: course.title,
+          lessonTitle: lesson.title,
+          moduleTitle: module.title
+        };
+      }
+    }
+    return null;
+  };
+
+  // Helper to get tool name
+  const getToolName = (toolType: 'campaign' | 'image' | 'seo') => {
+    const toolMap = {
+      campaign: 'Spec Architect',
+      image: 'Vibe Lab',
+      seo: 'Auditor'
+    };
+    return toolMap[toolType];
+  };
+
+  // Filter recent usage to only show items from last 7 days
+  const recentUsageWithinWeek = recentToolUsage.filter(usage => {
+    const daysSince = (Date.now() - usage.timestamp.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSince <= 7;
+  });
 
   return (
     <div className="space-y-8 md:space-y-10 pb-10">
@@ -73,21 +206,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
         </div>
       </div>
 
-      {/* Course Cards (Active Tracks) - MOVED TO TOP */}
+      {/* Course Cards (Active Tracks) - PRIMARY FOCUS */}
       <div className="animate-slide-up delay-100">
-        <h2 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-6">Active Tracks</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+        <h2 className="text-4xl md:text-5xl font-display font-bold text-slate-900 dark:text-white mb-10 tracking-tight">Active Tracks</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12">
           {courses.map(course => {
             const mascot = COURSE_MASCOTS[course.id as keyof typeof COURSE_MASCOTS];
             return (
-              <div key={course.id} className="group glass-panel rounded-[24px] overflow-hidden hover:border-indigo-400/40 hover:-translate-y-1 transition-all duration-300">
-                <div className="h-48 overflow-hidden relative">
+              <div key={course.id} className="group glass-panel rounded-[32px] overflow-hidden hover:border-indigo-400/50 hover:-translate-y-3 hover:shadow-[0_20px_60px_rgba(99,102,241,0.3)] transition-all duration-300 border-2">
+                <div className="h-64 overflow-hidden relative">
                   <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 dark:opacity-80 group-hover:opacity-100" />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent dark:from-[#0F172A] dark:to-transparent opacity-90" />
 
                   {/* Course Mascot */}
                   {mascot && (
-                    <div className="absolute top-4 right-4 w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl p-2 border border-white/20 group-hover:scale-110 transition-transform">
+                    <div className="absolute top-4 right-4 w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl p-2 border border-white/20 group-hover:scale-110 transition-transform">
                       <img src={mascot.svg} alt={mascot.name} className="w-full h-full object-contain" />
                     </div>
                   )}
@@ -98,9 +231,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
                     ))}
                   </div>
                 </div>
-                <div className="p-7">
+                <div className="p-10">
                   <div className="flex items-start justify-between mb-1">
-                    <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white leading-tight group-hover:text-indigo-500 transition-colors">{course.title}</h3>
+                    <h3 className="text-3xl font-display font-bold text-slate-900 dark:text-white leading-tight group-hover:text-indigo-500 transition-colors">{course.title}</h3>
                     {mascot && (
                       <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-2 py-1 rounded-full">
                         🐾 {mascot.name}
@@ -109,15 +242,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
                   </div>
                   <p className="text-xs text-indigo-500 dark:text-indigo-400 font-bold uppercase tracking-wider mb-4">{course.subtitle}</p>
                   <p className="text-slate-500 dark:text-[#94A3B8] text-sm mb-6 leading-relaxed line-clamp-2 font-light">{course.description}</p>
-                  <div className="flex items-center justify-between pt-5 border-t border-slate-200 dark:border-white/5">
+                  <div className="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-white/5">
                     <span className="text-xs text-slate-500 dark:text-[#64748B] font-semibold flex items-center">
                       <PlayCircle size={14} className="mr-1" /> {course.modules.length} Sessions
                     </span>
                     <button
                       onClick={() => onNavigate({ type: 'course', courseId: course.id })}
-                      className="flex items-center text-white bg-indigo-600 dark:bg-white/5 border border-transparent dark:border-white/10 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all"
+                      className="flex items-center text-white bg-indigo-600 dark:bg-white/5 border border-transparent dark:border-white/10 px-8 py-4 rounded-full font-bold text-base hover:bg-indigo-500 hover:shadow-[0_0_25px_rgba(99,102,241,0.5)] transition-all"
                     >
-                      Sync Session <ArrowRight size={16} className="ml-2" />
+                      Sync Session <ArrowRight size={18} className="ml-2" />
                     </button>
                   </div>
                 </div>
@@ -127,57 +260,89 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
         </div>
       </div>
 
-      {/* Tools Grid */}
-      <div className="animate-slide-up delay-200">
-        <h2 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-6">Direction Suite</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button
-            onClick={() => onNavigate({ type: 'tool', toolName: 'campaign' })}
-            className="glass-panel flex flex-col items-center justify-center p-6 rounded-[24px] hover:bg-slate-50 dark:hover:bg-white/10 hover:border-indigo-500/40 hover:-translate-y-1 transition-all group duration-300"
-          >
-            <div className="p-4 rounded-full bg-indigo-500/10 text-indigo-500 mb-3 group-hover:scale-110 group-hover:bg-indigo-500 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(99,102,241,0.6)] transition-all duration-300 border border-indigo-500/20">
-              <Terminal size={24} />
-            </div>
-            <h3 className="font-bold text-slate-900 dark:text-white mb-1">Spec Architect</h3>
-            <span className="text-xs text-slate-500 dark:text-[#94A3B8]">The Blueprint</span>
-          </button>
+      {/* Recent Tool Usage Shortcuts */}
+      {recentUsageWithinWeek.length > 0 && (
+        <div className="animate-slide-up delay-150">
+          <h2 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-6">Continue Where You Left Off</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {recentUsageWithinWeek.map(usage => {
+              const details = getLessonDetails(usage.courseId, usage.lessonId);
+              if (!details) return null;
 
-          <button
-            onClick={() => onNavigate({ type: 'tool', toolName: 'image' })}
-            className="glass-panel flex flex-col items-center justify-center p-6 rounded-[24px] hover:bg-slate-50 dark:hover:bg-white/10 hover:border-[#38BDF8]/40 hover:-translate-y-1 transition-all group duration-300"
-          >
-            <div className="p-4 rounded-full bg-[#38BDF8]/10 text-[#38BDF8] mb-3 group-hover:scale-110 group-hover:bg-[#38BDF8] group-hover:text-white group-hover:shadow-[0_0_20px_rgba(56,189,248,0.6)] transition-all duration-300 border border-[#38BDF8]/20">
-              <Layout size={24} />
-            </div>
-            <h3 className="font-bold text-slate-900 dark:text-white mb-1">Vibe Lab</h3>
-            <span className="text-xs text-slate-500 dark:text-[#94A3B8]">UI Logic</span>
-          </button>
+              const toolName = getToolName(usage.toolType);
+              const timeSince = Math.floor((Date.now() - usage.timestamp.getTime()) / (1000 * 60 * 60 * 24));
+              const timeText = timeSince === 0 ? 'Today' : timeSince === 1 ? 'Yesterday' : `${timeSince} days ago`;
 
-          <button
-            onClick={() => onNavigate({ type: 'tool', toolName: 'seo' })}
-            className="glass-panel flex flex-col items-center justify-center p-6 rounded-[24px] hover:bg-slate-50 dark:hover:bg-white/10 hover:border-emerald-500/40 hover:-translate-y-1 transition-all group duration-300"
-          >
-            <div className="p-4 rounded-full bg-emerald-500/10 text-emerald-500 mb-3 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(16,185,129,0.6)] transition-all duration-300 border border-emerald-500/20">
-              <ShieldCheck size={24} />
-            </div>
-            <h3 className="font-bold text-slate-900 dark:text-white mb-1">Auditor</h3>
-            <span className="text-xs text-slate-500 dark:text-[#94A3B8]">Code Review</span>
-          </button>
-
-          <button
-            onClick={() => window.open('https://cursor.directory', '_blank')}
-            className="glass-panel flex flex-col items-center justify-center p-6 rounded-[24px] hover:bg-slate-50 dark:hover:bg-white/10 hover:border-purple-500/40 hover:-translate-y-1 transition-all group duration-300"
-          >
-            <div className="p-4 rounded-full bg-purple-500/10 text-purple-500 mb-3 group-hover:scale-110 group-hover:bg-purple-500 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(168,85,247,0.6)] transition-all duration-300 border border-purple-500/20">
-              <Code size={24} />
-            </div>
-            <h3 className="font-bold text-slate-900 dark:text-white mb-1">Rules Dir</h3>
-            <span className="text-xs text-slate-500 dark:text-[#94A3B8]">External Repo</span>
-          </button>
+              return (
+                <button
+                  key={usage.id}
+                  onClick={() => onNavigate({ type: 'course', courseId: usage.courseId, moduleId: usage.lessonId })}
+                  className="glass-panel p-5 rounded-[20px] hover:bg-slate-50 dark:hover:bg-white/10 hover:border-indigo-400/40 transition-all text-left group"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Clock size={14} className="text-slate-400" />
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{timeText}</span>
+                    </div>
+                    <span className="text-[10px] px-2 py-1 rounded-full bg-indigo-500/10 text-indigo-500 font-bold">
+                      {toolName}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-slate-900 dark:text-white mb-1 group-hover:text-indigo-500 transition-colors">
+                    {details.lessonTitle}
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                    {details.courseTitle}
+                  </p>
+                  <div className="flex items-center text-indigo-500 text-sm font-semibold">
+                    Continue <ArrowRight size={14} className="ml-1 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Stats Section (Moved to Bottom) */}
+      {/* Tools Grid - SECONDARY FOCUS - Only show if tools are used in courses */}
+      {relevantTools.length > 0 && (
+        <div className="animate-slide-up delay-200">
+          <h2 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-6">Direction Suite</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {relevantTools.map(tool => {
+              const colors = getToolColorClasses(tool.color);
+              const Icon = tool.icon;
+              return (
+                <button
+                  key={tool.id}
+                  onClick={tool.onClick}
+                  className="glass-panel flex flex-col items-center justify-center p-6 rounded-[24px] hover:bg-slate-50 dark:hover:bg-white/10 hover:border-indigo-500/40 hover:-translate-y-1 transition-all group duration-300"
+                >
+                  <div className={`p-4 rounded-full ${colors.bg} ${colors.text} mb-3 group-hover:scale-110 ${colors.hover} group-hover:text-white ${colors.shadow} transition-all duration-300 border ${colors.border}`}>
+                    <Icon size={24} />
+                  </div>
+                  <h3 className="font-bold text-slate-900 dark:text-white mb-1">{tool.name}</h3>
+                  <span className="text-xs text-slate-500 dark:text-[#94A3B8]">{tool.description}</span>
+                </button>
+              );
+            })}
+
+            {/* External tool - always show */}
+            <button
+              onClick={() => window.open('https://cursor.directory', '_blank')}
+              className="glass-panel flex flex-col items-center justify-center p-6 rounded-[24px] hover:bg-slate-50 dark:hover:bg-white/10 hover:border-purple-500/40 hover:-translate-y-1 transition-all group duration-300"
+            >
+              <div className="p-4 rounded-full bg-purple-500/10 text-purple-500 mb-3 group-hover:scale-110 group-hover:bg-purple-500 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(168,85,247,0.6)] transition-all duration-300 border border-purple-500/20">
+                <Code size={24} />
+              </div>
+              <h3 className="font-bold text-slate-900 dark:text-white mb-1">Rules Dir</h3>
+              <span className="text-xs text-slate-500 dark:text-[#94A3B8]">External Repo</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Stats Section - TERTIARY FOCUS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 animate-slide-up delay-300">
         {/* Operational Mastery - Original Stats Card */}
         <div className="space-y-6 md:space-y-8 flex flex-col lg:col-span-3">

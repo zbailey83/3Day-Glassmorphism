@@ -4,6 +4,7 @@ import { ImageGenLab } from './tools/ImageGenLab';
 import { SeoAnalyzer } from './tools/SeoAnalyzer';
 import { ToolContext, ToolUsage } from '../types';
 import { CheckCircle } from 'lucide-react';
+import { storeToolContext, clearToolContext } from '../utils/toolContext';
 
 interface EmbeddedToolProps {
     toolType: 'campaign' | 'image' | 'seo';
@@ -21,6 +22,19 @@ export const EmbeddedTool: React.FC<EmbeddedToolProps> = ({
     courseId
 }) => {
     const [hasTrackedUsage, setHasTrackedUsage] = useState(false);
+
+    // Store lesson and course context when tool is opened
+    useEffect(() => {
+        // Store context using utility function
+        storeToolContext(lessonId, courseId, toolType);
+        console.log('Tool context stored:', { lessonId, courseId, toolType });
+
+        // Cleanup: Clear context when component unmounts
+        return () => {
+            console.log('Tool context cleared on unmount');
+            clearToolContext();
+        };
+    }, [lessonId, courseId, toolType]);
 
     // Track tool usage when component mounts
     useEffect(() => {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Wrench, X } from 'lucide-react';
 import { EmbeddedTool } from './EmbeddedTool';
 import { ToolContext } from '../types';
+import { storeNavigationContext, getNavigationContext, clearNavigationContext } from '../utils/toolContext';
 
 interface ToolLaunchButtonProps {
     toolType: 'campaign' | 'image' | 'seo';
@@ -23,16 +24,38 @@ export const ToolLaunchButton: React.FC<ToolLaunchButtonProps> = ({
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const handleOpenTool = () => {
+        // Store navigation context before opening tool using utility function
+        storeNavigationContext(lessonId, courseId, toolType);
+        console.log('Tool navigation context stored:', { lessonId, courseId, toolType });
+
         setIsModalOpen(true);
     };
 
     const handleCloseTool = () => {
+        // Retrieve stored context to verify it was preserved
+        const storedContext = getNavigationContext();
+        if (storedContext) {
+            console.log('Returning to lesson context:', storedContext);
+        }
+
         setIsModalOpen(false);
+
+        // Clear navigation context after closing
+        clearNavigationContext();
     };
 
     const handleComplete = (result?: any) => {
+        // Retrieve stored context to verify it was preserved
+        const storedContext = getNavigationContext();
+        if (storedContext) {
+            console.log('Tool completed, returning to lesson context:', storedContext);
+        }
+
         // Tool completed, close modal
         setIsModalOpen(false);
+
+        // Clear navigation context after completion
+        clearNavigationContext();
     };
 
     // Render button based on variant

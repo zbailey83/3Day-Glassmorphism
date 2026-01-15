@@ -46,7 +46,7 @@ This implementation plan transforms the VIBE DEV 2026 platform from a tool-centr
   - **Validates: Requirements 7.1, 7.2**
 
 - [x] 4. Enhance CourseView component for tool embedding
-  - [-] 4.1 Update CourseView to conditionally render EmbeddedTool
+  - [x] 4.1 Update CourseView to conditionally render EmbeddedTool
     - Check if activeLesson has requiredTool field
     - Render EmbeddedTool component when requiredTool is present
     - Pass toolContext from lesson to EmbeddedTool
@@ -72,11 +72,11 @@ This implementation plan transforms the VIBE DEV 2026 platform from a tool-centr
     - **Property 2: Context Preservation During Tool Navigation**
     - **Validates: Requirements 2.2**
 
-- [ ] 5. Checkpoint - Ensure all tests pass
+- [x] 5. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 6. Redesign Dashboard component
-  - [ ] 6.1 Reorder dashboard sections
+- [x] 6. Redesign Dashboard component
+  - [x] 6.1 Reorder dashboard sections
     - Move "Active Courses" section to top (currently below stats)
     - Move "Direction Suite" (tools) section to bottom
     - Increase visual prominence of course cards
@@ -86,7 +86,7 @@ This implementation plan transforms the VIBE DEV 2026 platform from a tool-centr
     - **Property 6: Dashboard Layout Priority**
     - **Validates: Requirements 4.1, 4.5, 10.2**
 
-  - [ ] 6.3 Implement tool filtering based on enrolled courses
+  - [-] 6.3 Implement tool filtering based on enrolled courses
     - Extract tools used in enrolled courses
     - Filter dashboard tool cards to only show relevant tools
     - Hide tools section entirely if no tools are used in courses
@@ -96,7 +96,7 @@ This implementation plan transforms the VIBE DEV 2026 platform from a tool-centr
     - **Property 5: Dashboard Tool Filtering**
     - **Validates: Requirements 4.2, 4.3**
 
-  - [ ] 6.5 Add recent tool usage shortcuts
+  - [x] 6.5 Add recent tool usage shortcuts
     - Query recent ToolUsage records for current user
     - Display "Continue" shortcuts for recent tool usage
     - Link shortcuts back to lesson context

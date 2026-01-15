@@ -381,3 +381,49 @@ export const updateModuleProgress = async (userId: string, courseId: string, mod
         }
     }
 };
+
+// Tool Usage tracking
+export const recordToolUsage = async (userId: string, toolType: 'campaign' | 'image' | 'seo', lessonId: string, courseId: string, completed: boolean = false, result?: any) => {
+    try {
+        const toolUsageData = {
+            userId,
+            toolType,
+            lessonId,
+            courseId,
+            timestamp: serverTimestamp(),
+            completed,
+            result: result || null
+        };
+
+        await addDoc(collection(db, 'toolUsage'), toolUsageData);
+        console.log(`Recorded tool usage: ${toolType} for lesson ${lessonId}`);
+    } catch (error) {
+        console.error("Error recording tool usage:", error);
+        // Don't throw - tool usage tracking shouldn't break the app
+    }
+};
+
+export const getRecentToolUsage = async (userId: string, limit: number = 5) => {
+    try {
+        const q = query(
+            collection(db, 'toolUsage'),
+            where('userId', '==', userId),
+            orderBy('timestamp', 'desc')
+        );
+
+        const querySnapshot = await getDocs(q);
+        const usageRecords = querySnapshot.docs
+            .slice(0, limit)
+            .map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                timestamp: doc.data().timestamp?.toDate() || new Date()
+            }));
+
+        return usageRecords;
+    } catch (error) {
+        console.error("Error fetching recent tool usage:", error);
+        return [];
+    }
+};
+
