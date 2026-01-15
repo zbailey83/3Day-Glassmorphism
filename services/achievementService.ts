@@ -6,6 +6,69 @@ import { awardXP, calculateAchievementXP } from './xpService';
 import { validateUserId, validateAchievementId } from './validation';
 
 /**
+ * Get relevant achievements to check based on the action performed.
+ * 
+ * This optimization reduces the number of achievements to evaluate by filtering
+ * based on the action type. For example, when completing a lesson, only
+ * lesson-related achievements are checked.
+ * 
+ * @param actionType - Type of action that triggered the check
+ * @param context - Context containing action-specific data
+ * @returns Array of achievements that could potentially be unlocked by this action
+ * 
+ * @example
+ * ```typescript
+ * // Only returns lesson completion achievements
+ * const lessonAchievements = getRelevantAchievements('lesson', context);
+ * 
+ * // Returns all achievements
+ * const allAchievements = getRelevantAchievements('all', context);
+ * ```
+ */
+function getRelevantAchievements(
+    actionType: 'lesson' | 'course' | 'streak' | 'xp' | 'project' | 'like' | 'all',
+    context: AchievementContext
+): Achievement[] {
+    // If checking all achievements, return all
+    if (actionType === 'all') {
+        return ACHIEVEMENTS;
+    }
+
+    // Filter achievements based on action type
+    return ACHIEVEMENTS.filter(achievement => {
+        switch (actionType) {
+            case 'lesson':
+                // Only check lesson completion achievements
+                return achievement.requirement.type === 'lesson_complete';
+
+            case 'course':
+                // Check course completion and potentially XP achievements
+                return achievement.requirement.type === 'course_complete' ||
+                    achievement.requirement.type === 'xp_total';
+
+            case 'streak':
+                // Only check streak achievements
+                return achievement.requirement.type === 'streak';
+
+            case 'xp':
+                // Only check XP total achievements
+                return achievement.requirement.type === 'xp_total';
+
+            case 'project':
+                // Check project upload achievements
+                return achievement.requirement.type === 'projects';
+
+            case 'like':
+                // Check like-related achievements
+                return achievement.requirement.type === 'likes';
+
+            default:
+                return false;
+        }
+    });
+}
+
+/**
  * Context object containing user activity data for achievement evaluation
  */
 export interface AchievementContext {
@@ -15,14 +78,31 @@ export interface AchievementContext {
     totalXP?: number;
     projectsUploaded?: number;
     likesReceived?: number;
+    actionType?: 'lesson' | 'course' | 'streak' | 'xp' | 'project' | 'like' | 'all';
 }
 
 /**
- * Evaluate if a user meets an achievement requirement
+ * Evaluate if a user meets a specific achievement requirement.
+ * 
+ * Supports multiple requirement types:
+ * - lesson_complete: Check if user completed N lessons (optionally in specific course)
+ * - course_complete: Check if user completed N courses (or specific course)
+ * - streak: Check if user has N consecutive login days
+ * - xp_total: Check if user has earned N total XP
+ * - projects: Check if user uploaded N projects
+ * - likes: Check if user received N likes
+ * 
  * @param requirement - Achievement requirement to evaluate
- * @param context - Context containing user activity data
- * @param userProfile - User's profile data
+ * @param context - Context containing user activity data from current action
+ * @param userProfile - User's profile data from Firestore
  * @returns true if requirement is met, false otherwise
+ * 
+ * @example
+ * ```typescript
+ * const requirement = { type: 'lesson_complete', value: 5, courseId: 'course-1' };
+ * const context = { lessonsCompleted: [{ courseId: 'course-1', lessonId: 'lesson-1' }] };
+ * const meets = evaluateRequirement(requirement, context, userProfile);
+ * ```
  */
 export function evaluateRequirement(
     requirement: Achievement['requirement'],
@@ -109,10 +189,40 @@ export function evaluateRequirement(
 }
 
 /**
- * Check all achievements for a user and unlock any that meet requirements
- * @param userId - User ID to check achievements for
- * @param context - Context containing user activity data
- * @returns Array of newly unlocked achievements
+ * Check all relevant achievements for a user and unlock any that meet requirements.
+ * 
+ * This function:
+ * 1. Retrieves the user's profile from Firestore
+ * 2. Filters achievements based on action type (optimization)
+ * 3. Evaluates each relevant achievement's requirements
+ * 4. Unlocks achievements that meet requirements
+ * 5. Returns array of newly unlocked achievements
+ * 
+ * The function is designed to be non-blocking - errors in checking individual
+ * achievements won't prevent other achievements from being checked.
+ * 
+ * Side effects:
+ * - May unlock achievements (updates user profile)
+ * - May award XP for unlocked achievements
+ * - Logs to console
+ * 
+ * @param userId - User ID to check achievements for (must be non-empty string)
+ * @param context - Context containing user activity data and action type
+ * @returns Array of newly unlocked achievements (empty array on error)
+ * 
+ * @example
+ * ```typescript
+ * // Check lesson-related achievements after completing a lesson
+ * const unlocked = await checkAchievements('user123', {
+ *   lessonsCompleted: [{ courseId: 'course-1', lessonId: 'lesson-5' }],
+ *   actionType: 'lesson'
+ * });
+ * 
+ * // Check all achievements
+ * const allUnlocked = await checkAchievements('user123', {
+ *   actionType: 'all'
+ * });
+ * ```
  */
 export async function checkAchievements(
     userId: string,
@@ -138,9 +248,15 @@ export async function checkAchievements(
         const unlockedIds = userProfile.unlockedAchievements || [];
         const newlyUnlocked: Achievement[] = [];
 
-        // Check each achievement
-        for (const achievement of ACHIEVEMENTS) {
-            // Skip if already unlocked
+        // Determine which achievements to check based on action type
+        const actionType = context.actionType || 'all';
+        const relevantAchievements = getRelevantAchievements(actionType, context);
+
+        console.log(`Checking ${relevantAchievements.length} relevant achievements (action: ${actionType})`);
+
+        // Check each relevant achievement
+        for (const achievement of relevantAchievements) {
+            // Skip if already unlocked (early exit optimization)
             if (unlockedIds.includes(achievement.id)) {
                 continue;
             }
@@ -192,10 +308,36 @@ function handleGamificationError(error: Error, context: string): void {
 }
 
 /**
- * Unlock an achievement for a user
- * @param userId - User ID to unlock achievement for
- * @param achievementId - Achievement ID to unlock
- * @throws Error if achievement doesn't exist or database operation fails
+ * Unlock an achievement for a user with idempotency protection.
+ * 
+ * This function:
+ * 1. Validates inputs (userId and achievementId)
+ * 2. Checks if achievement is already unlocked (prevents duplicates)
+ * 3. Adds achievement to user's unlocked achievements array
+ * 4. Awards achievement XP
+ * 5. Logs unlock to achievementUnlocks collection
+ * 
+ * Idempotency: Calling this function multiple times with the same achievement
+ * will only unlock it once and award XP once.
+ * 
+ * Side effects:
+ * - Updates user's unlockedAchievements array
+ * - Awards XP to the user
+ * - Creates an achievement unlock record
+ * - Logs to console
+ * 
+ * @param userId - User ID to unlock achievement for (must be non-empty string)
+ * @param achievementId - Achievement ID to unlock (must exist in ACHIEVEMENTS)
+ * @throws Error if achievement doesn't exist, user not found, or database operation fails
+ * 
+ * @example
+ * ```typescript
+ * // Unlock the "First Steps" achievement
+ * await unlockAchievement('user123', 'first-lesson');
+ * 
+ * // Calling again won't award XP twice
+ * await unlockAchievement('user123', 'first-lesson'); // Logs "already unlocked"
+ * ```
  */
 export async function unlockAchievement(
     userId: string,
@@ -259,9 +401,16 @@ export async function unlockAchievement(
 }
 
 /**
- * Get all unlocked achievement IDs for a user
- * @param userId - User ID to get unlocked achievements for
- * @returns Array of unlocked achievement IDs
+ * Get all unlocked achievement IDs for a user.
+ * 
+ * @param userId - User ID to get unlocked achievements for (must be non-empty string)
+ * @returns Array of unlocked achievement IDs (empty array on error or if user not found)
+ * 
+ * @example
+ * ```typescript
+ * const unlockedIds = await getUnlockedAchievements('user123');
+ * // Returns: ['first-lesson', 'streak-3', 'xp-100']
+ * ```
  */
 export async function getUnlockedAchievements(userId: string): Promise<string[]> {
     // Validate userId using centralized validation
@@ -291,10 +440,19 @@ export async function getUnlockedAchievements(userId: string): Promise<string[]>
 }
 
 /**
- * Check if a specific achievement is unlocked for a user
- * @param userId - User ID to check
- * @param achievementId - Achievement ID to check
- * @returns true if achievement is unlocked, false otherwise
+ * Check if a specific achievement is unlocked for a user.
+ * 
+ * @param userId - User ID to check (must be non-empty string)
+ * @param achievementId - Achievement ID to check (must exist in ACHIEVEMENTS)
+ * @returns true if achievement is unlocked, false otherwise (or on error)
+ * 
+ * @example
+ * ```typescript
+ * const isUnlocked = await isAchievementUnlocked('user123', 'first-lesson');
+ * if (isUnlocked) {
+ *   console.log('User has completed their first lesson!');
+ * }
+ * ```
  */
 export async function isAchievementUnlocked(
     userId: string,

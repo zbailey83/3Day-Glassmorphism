@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useReducer, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useCallback, useRef } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { UserProfile, DailyChallengeProgress } from '../types';
@@ -10,6 +10,15 @@ import { updateStreak as updateStreakService } from '../services/streakService';
 import { getDailyChallenges, completeDailyChallenge as completeDailyChallengeService } from '../services/dailyChallengeService';
 import { DailyChallenge } from '../src/data/gamification';
 import { showXPGain, showLevelUp, showAchievementUnlock, showStreakUpdate } from '../services/notificationService';
+
+// XP award queue item
+interface XPAwardQueueItem {
+    amount: number;
+    reason: string;
+}
+
+// Debounce delay for batching XP awards (in milliseconds)
+const XP_DEBOUNCE_DELAY = 1000;
 
 // Context type definition
 interface GamificationContextType {
@@ -155,6 +164,54 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
 }) => {
     const [state, dispatch] = useReducer(gamificationReducer, initialState);
 
+    // XP debouncing state
+    const xpQueueRef = useRef<XPAwardQueueItem[]>([]);
+    const xpDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Flush XP queue - batch all pending XP awards into a single database write
+    const flushXPQueue = useCallback(async () => {
+        if (!userId || xpQueueRef.current.length === 0) {
+            return;
+        }
+
+        const queueCopy = [...xpQueueRef.current];
+        xpQueueRef.current = [];
+
+        // Calculate total XP from all queued awards
+        const totalXP = queueCopy.reduce((sum, item) => sum + item.amount, 0);
+
+        // Combine reasons for logging
+        const combinedReason = queueCopy.length === 1
+            ? queueCopy[0].reason
+            : `Batch award: ${queueCopy.map(item => `${item.amount} XP (${item.reason})`).join(', ')}`;
+
+        try {
+            // Award the batched XP in a single database write
+            await awardXPService(userId, totalXP, combinedReason);
+            console.log(`Flushed XP queue: ${totalXP} XP from ${queueCopy.length} awards`);
+
+            // Show individual notifications for each award
+            queueCopy.forEach(item => {
+                showXPGain(item.amount, item.reason);
+            });
+        } catch (error) {
+            console.error('Error flushing XP queue:', error);
+            // Re-queue failed awards
+            xpQueueRef.current.unshift(...queueCopy);
+        }
+    }, [userId]);
+
+    // Cleanup XP debounce timer on unmount
+    useEffect(() => {
+        return () => {
+            if (xpDebounceTimerRef.current) {
+                clearTimeout(xpDebounceTimerRef.current);
+                // Flush any remaining XP awards
+                flushXPQueue();
+            }
+        };
+    }, [flushXPQueue]);
+
     // Notification functions integrated with notification service
     const showLevelUpNotification = useCallback((newLevel: LevelInfo) => {
         console.log('Level up!', newLevel);
@@ -173,16 +230,22 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
             return;
         }
 
-        try {
-            await awardXPService(userId, amount, reason);
-            console.log(`Awarded ${amount} XP for: ${reason}`);
+        // Add to queue instead of immediate database write
+        xpQueueRef.current.push({ amount, reason });
 
-            // Show XP gain notification
-            showXPGain(amount, reason);
-        } catch (error) {
-            console.error('Error awarding XP:', error);
+        // Clear existing timer
+        if (xpDebounceTimerRef.current) {
+            clearTimeout(xpDebounceTimerRef.current);
         }
-    }, [userId]);
+
+        // Set new timer to flush queue after debounce delay
+        xpDebounceTimerRef.current = setTimeout(() => {
+            flushXPQueue();
+            xpDebounceTimerRef.current = null;
+        }, XP_DEBOUNCE_DELAY);
+
+        console.log(`Queued ${amount} XP for: ${reason} (queue size: ${xpQueueRef.current.length})`);
+    }, [userId, flushXPQueue]);
 
     const completeLesson = useCallback(async (
         courseId: string,
@@ -223,7 +286,7 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
         }
 
         try {
-            const newAchievements = await checkAchievementsService(userId, {});
+            const newAchievements = await checkAchievementsService(userId, { actionType: 'all' });
             console.log(`Checked achievements, found ${newAchievements.length} new unlocks`);
 
             // Show notifications for new achievements

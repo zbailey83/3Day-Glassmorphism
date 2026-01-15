@@ -6,12 +6,37 @@ import { checkAchievements, AchievementContext } from './achievementService';
 import { validateUserId, validateCourseId, validateLessonId } from './validation';
 
 /**
- * Complete a lesson for a user
- * @param userId - User ID completing the lesson
- * @param courseId - Course ID containing the lesson
- * @param lessonId - Lesson ID being completed
- * @param lessonType - Type of lesson (video, reading, or lab) for XP calculation
+ * Complete a lesson for a user with idempotency protection.
+ * 
+ * This function:
+ * 1. Validates inputs (userId, courseId, lessonId)
+ * 2. Checks if lesson is already completed (prevents duplicates)
+ * 3. Adds lesson to user's completed lessons for the course
+ * 4. Awards lesson XP based on lesson type
+ * 5. Checks for lesson-related achievements
+ * 
+ * Idempotency: Completing the same lesson multiple times will only award XP once.
+ * 
+ * Side effects:
+ * - Updates user's courseProgress array
+ * - Awards XP to the user
+ * - May unlock achievements
+ * - Logs to console
+ * 
+ * @param userId - User ID completing the lesson (must be non-empty string)
+ * @param courseId - Course ID containing the lesson (must be non-empty string)
+ * @param lessonId - Lesson ID being completed (must be non-empty string)
+ * @param lessonType - Type of lesson for XP calculation (default: 'reading')
  * @throws Error if user not found or database operation fails
+ * 
+ * @example
+ * ```typescript
+ * // Complete a video lesson
+ * await completeLesson('user123', 'course-1', 'lesson-5', 'video');
+ * 
+ * // Complete a lab lesson (awards more XP)
+ * await completeLesson('user123', 'course-1', 'lesson-10', 'lab');
+ * ```
  */
 export async function completeLesson(
     userId: string,
@@ -97,7 +122,8 @@ export async function completeLesson(
 
         // Check for lesson-related achievements
         const achievementContext: AchievementContext = {
-            lessonsCompleted: [{ courseId, lessonId }]
+            lessonsCompleted: [{ courseId, lessonId }],
+            actionType: 'lesson'
         };
 
         await checkAchievements(userId, achievementContext);
@@ -111,10 +137,32 @@ export async function completeLesson(
 }
 
 /**
- * Complete a course for a user
- * @param userId - User ID completing the course
- * @param courseId - Course ID being completed
- * @throws Error if user not found or database operation fails
+ * Complete a course for a user with idempotency protection.
+ * 
+ * This function:
+ * 1. Validates inputs (userId, courseId)
+ * 2. Checks if course is already completed (prevents duplicates)
+ * 3. Marks course as completed in user's course progress
+ * 4. Awards course completion XP (200 XP)
+ * 5. Checks for course completion achievements
+ * 
+ * Idempotency: Completing the same course multiple times will only award XP once.
+ * 
+ * Side effects:
+ * - Updates user's courseProgress array (sets courseCompleted to true)
+ * - Awards 200 XP to the user
+ * - May unlock achievements
+ * - Logs to console
+ * 
+ * @param userId - User ID completing the course (must be non-empty string)
+ * @param courseId - Course ID being completed (must be non-empty string)
+ * @throws Error if user not found, course progress not found, or database operation fails
+ * 
+ * @example
+ * ```typescript
+ * // Mark course as completed after user finishes all lessons
+ * await completeCourse('user123', 'course-1');
+ * ```
  */
 export async function completeCourse(
     userId: string,
@@ -181,7 +229,8 @@ export async function completeCourse(
 
         // Check for course completion achievements
         const achievementContext: AchievementContext = {
-            coursesCompleted: [courseId]
+            coursesCompleted: [courseId],
+            actionType: 'course'
         };
 
         await checkAchievements(userId, achievementContext);

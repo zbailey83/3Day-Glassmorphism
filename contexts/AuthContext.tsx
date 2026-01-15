@@ -12,6 +12,7 @@ import { auth, googleProvider, syncUserProfile } from '../services/firebase';
 import { UserProfile } from '../types';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase';
+import { updateStreak } from '../services/streakService';
 
 interface AuthContextType {
     user: User | null;
@@ -42,6 +43,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 try {
                     // Sync basic profile if needed
                     await syncUserProfile(currentUser);
+
+                    // Update user's login streak
+                    try {
+                        await updateStreak(currentUser.uid);
+                        console.log('Streak updated successfully for user:', currentUser.uid);
+                    } catch (streakError) {
+                        // Handle streak update errors gracefully - don't block login
+                        console.error('Failed to update streak, but continuing with login:', streakError);
+                        // Streak update failure should not prevent user from logging in
+                    }
 
                     // Listen to realtime profile updates (XP, level, etc)
                     const profileUnsub = onSnapshot(doc(db, 'users', currentUser.uid), (doc) => {

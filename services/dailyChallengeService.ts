@@ -6,8 +6,16 @@ import { awardXP } from './xpService';
 import { validateUserId, validateChallengeId } from './validation';
 
 /**
- * Get today's date in YYYY-MM-DD format (UTC)
+ * Get today's date in YYYY-MM-DD format (UTC timezone).
+ * 
+ * Used for daily challenge reset logic - challenges reset at midnight UTC.
+ * 
  * @returns Date string in YYYY-MM-DD format
+ * 
+ * @example
+ * ```typescript
+ * const today = getTodayDateString(); // Returns "2026-01-15"
+ * ```
  */
 function getTodayDateString(): string {
     const now = new Date();
@@ -15,9 +23,22 @@ function getTodayDateString(): string {
 }
 
 /**
- * Get all daily challenges for a user with completion status
- * @param userId - User ID to get challenges for
- * @returns Array of daily challenges with completion status
+ * Get all daily challenges for a user with their completion status for today.
+ * 
+ * Returns all available daily challenges with a 'completed' flag indicating
+ * whether the user has completed each challenge today. Challenges reset at
+ * midnight UTC.
+ * 
+ * @param userId - User ID to get challenges for (must be non-empty string)
+ * @returns Array of daily challenges with completion status (returns all incomplete on error)
+ * 
+ * @example
+ * ```typescript
+ * const challenges = await getDailyChallenges('user123');
+ * challenges.forEach(challenge => {
+ *   console.log(`${challenge.title}: ${challenge.completed ? 'Done' : 'Pending'}`);
+ * });
+ * ```
  */
 export async function getDailyChallenges(userId: string): Promise<(DailyChallenge & { completed: boolean })[]> {
     // Validate userId using centralized validation
@@ -69,10 +90,34 @@ export async function getDailyChallenges(userId: string): Promise<(DailyChalleng
 }
 
 /**
- * Complete a daily challenge for a user
- * @param userId - User ID completing the challenge
- * @param challengeId - Challenge ID being completed
+ * Complete a daily challenge for a user with idempotency protection.
+ * 
+ * This function:
+ * 1. Validates inputs (userId, challengeId)
+ * 2. Checks if challenge is already completed today (prevents duplicates)
+ * 3. Awards challenge XP
+ * 4. Logs completion to dailyChallengeProgress collection
+ * 
+ * Idempotency: Completing the same challenge multiple times in one day will
+ * only award XP once. The challenge can be completed again the next day.
+ * 
+ * Side effects:
+ * - Awards XP to the user
+ * - Creates a daily challenge progress record
+ * - Logs to console
+ * 
+ * @param userId - User ID completing the challenge (must be non-empty string)
+ * @param challengeId - Challenge ID being completed (must exist in DAILY_CHALLENGES)
  * @throws Error if challenge doesn't exist or database operation fails
+ * 
+ * @example
+ * ```typescript
+ * // Complete a daily challenge
+ * await completeDailyChallenge('user123', 'daily-lesson');
+ * 
+ * // Trying again today won't award XP
+ * await completeDailyChallenge('user123', 'daily-lesson'); // Logs "already completed"
+ * ```
  */
 export async function completeDailyChallenge(
     userId: string,
@@ -135,10 +180,19 @@ export async function completeDailyChallenge(
 }
 
 /**
- * Check if a specific daily challenge is completed today
- * @param userId - User ID to check
- * @param challengeId - Challenge ID to check
- * @returns true if challenge is completed today, false otherwise
+ * Check if a specific daily challenge is completed today.
+ * 
+ * @param userId - User ID to check (must be non-empty string)
+ * @param challengeId - Challenge ID to check (must exist in DAILY_CHALLENGES)
+ * @returns true if challenge is completed today, false otherwise (or on error)
+ * 
+ * @example
+ * ```typescript
+ * const isCompleted = await isDailyChallengeCompleted('user123', 'daily-lesson');
+ * if (!isCompleted) {
+ *   console.log('Challenge still available today!');
+ * }
+ * ```
  */
 export async function isDailyChallengeCompleted(
     userId: string,
@@ -173,10 +227,23 @@ export async function isDailyChallengeCompleted(
 }
 
 /**
- * Get user's daily challenge completion history
- * @param userId - User ID to get history for
- * @param limit - Maximum number of records to return (default: 30)
- * @returns Array of daily challenge progress records
+ * Get user's daily challenge completion history.
+ * 
+ * Returns a list of completed daily challenges, sorted by date descending
+ * (most recent first), limited to the specified number of records.
+ * 
+ * @param userId - User ID to get history for (must be non-empty string)
+ * @param limit - Maximum number of records to return (default: 30, must be positive integer)
+ * @returns Array of daily challenge progress records (empty array on error)
+ * 
+ * @example
+ * ```typescript
+ * // Get last 30 days of challenge completions
+ * const history = await getDailyChallengeHistory('user123');
+ * 
+ * // Get last 7 days only
+ * const recentHistory = await getDailyChallengeHistory('user123', 7);
+ * ```
  */
 export async function getDailyChallengeHistory(
     userId: string,

@@ -5,10 +5,33 @@ import { awardXP, calculateStreakBonus } from './xpService';
 import { validateUserId } from './validation';
 
 /**
- * Update user's login streak based on time since last login
- * @param userId - User ID to update streak for
+ * Update user's login streak based on time since last login.
+ * 
+ * Streak logic:
+ * - < 24 hours: Same day, streak unchanged
+ * - 24-48 hours: Next day, streak increments by 1 and awards bonus XP
+ * - > 48 hours: Missed a day, streak resets to 1
+ * 
+ * Bonus XP: 5 XP per day of streak, capped at 50 XP (10+ day streak)
+ * 
+ * Side effects:
+ * - Updates user's streakDays field
+ * - Updates user's lastLogin timestamp
+ * - Awards bonus XP on streak increment
+ * - Logs to console
+ * 
+ * @param userId - User ID to update streak for (must be non-empty string)
  * @returns New streak value
- * @throws Error if user not found or update fails
+ * @throws Error if user not found or database update fails
+ * 
+ * @example
+ * ```typescript
+ * // User logs in 25 hours after last login
+ * const newStreak = await updateStreak('user123'); // Returns incremented streak
+ * 
+ * // User logs in 50 hours after last login
+ * const resetStreak = await updateStreak('user123'); // Returns 1 (reset)
+ * ```
  */
 export async function updateStreak(userId: string): Promise<number> {
     // Validate userId using centralized validation
@@ -66,9 +89,24 @@ export async function updateStreak(userId: string): Promise<number> {
 }
 
 /**
- * Get streak information for a user
- * @param userId - User ID to get streak info for
- * @returns Streak information including current streak and last login
+ * Get detailed streak information for a user.
+ * 
+ * Returns:
+ * - currentStreak: Number of consecutive login days
+ * - lastLogin: Date of last login
+ * - streakActive: Whether streak is still active (logged in within 48 hours)
+ * 
+ * @param userId - User ID to get streak info for (must be non-empty string)
+ * @returns Streak information object
+ * @throws Error if user not found or database query fails
+ * 
+ * @example
+ * ```typescript
+ * const info = await getStreakInfo('user123');
+ * console.log(`Current streak: ${info.currentStreak} days`);
+ * console.log(`Streak active: ${info.streakActive}`);
+ * console.log(`Last login: ${info.lastLogin.toLocaleDateString()}`);
+ * ```
  */
 export async function getStreakInfo(userId: string): Promise<{
     currentStreak: number;
