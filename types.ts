@@ -20,7 +20,7 @@ export interface Lesson {
     content: string;
     type: 'video' | 'reading' | 'lab';
     quiz?: QuizQuestion[];
-    requiredTool?: 'campaign' | 'image' | 'seo';
+    requiredTool?: 'campaign' | 'image';
     toolContext?: ToolContext;
 }
 
@@ -78,7 +78,7 @@ export interface UserProfile {
 
 export interface ToolUsage {
     userId: string;
-    toolType: 'campaign' | 'image' | 'seo';
+    toolType: 'campaign' | 'image';
     lessonId: string;
     courseId: string;
     timestamp: Date;

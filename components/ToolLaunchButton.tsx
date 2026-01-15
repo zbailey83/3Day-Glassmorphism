@@ -5,7 +5,7 @@ import { ToolContext } from '../types';
 import { storeNavigationContext, getNavigationContext, clearNavigationContext } from '../utils/toolContext';
 
 interface ToolLaunchButtonProps {
-    toolType: 'campaign' | 'image' | 'seo';
+    toolType: 'campaign' | 'image';
     label: string;
     context?: ToolContext;
     variant?: 'inline' | 'prominent';

@@ -15,7 +15,7 @@ export const generateProjectSpec = async (
   targetStack: string
 ) => {
   const client = getClient();
-  
+
   const prompt = `
     Act as a World-Class Senior Systems Architect and Engineering Manager.
     Brain Dump: ${brainDump}
@@ -47,7 +47,7 @@ export const generateProjectSpec = async (
 // Removed the restrictive UI/UX prefix to allow users to experiment with various styles in the Lab.
 export const generateImage = async (prompt: string) => {
   const client = getClient();
-  
+
   const response = await client.models.generateContent({
     model: GEMINI_IMAGE_MODEL,
     contents: {
@@ -68,10 +68,12 @@ export const generateImage = async (prompt: string) => {
       }
     }
   }
-  
+
   throw new Error("No image generated");
 };
 
+// auditLogicCode function removed - SeoAnalyzer tool not used in any course
+/*
 export const auditLogicCode = async (codeSnippet: string) => {
   const client = getClient();
   
@@ -98,3 +100,5 @@ export const auditLogicCode = async (codeSnippet: string) => {
   // Ensure we return a string to avoid breakage in components
   return response.text || "";
 };
+*/
+

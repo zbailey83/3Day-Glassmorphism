@@ -173,14 +173,5 @@ describe('ToolLaunchButton Component', () => {
 
             expect(screen.getByTestId('embedded-tool-image')).toBeTruthy();
         });
-
-        it('should work with seo tool type', () => {
-            render(<ToolLaunchButton {...defaultProps} toolType="seo" />);
-
-            const button = screen.getByText('Launch Campaign Tool');
-            fireEvent.click(button);
-
-            expect(screen.getByTestId('embedded-tool-seo')).toBeTruthy();
-        });
     });
 });

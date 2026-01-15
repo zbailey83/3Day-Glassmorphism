@@ -12,8 +12,7 @@ const TOOL_PATTERNS = [
   { pattern: /\[Campaign Generator\]/gi, toolType: 'campaign' as const, label: 'Launch Campaign Generator' },
   { pattern: /\[Image Generator\]/gi, toolType: 'image' as const, label: 'Launch Image Generator' },
   { pattern: /\[Visual Vibe Lab\]/gi, toolType: 'image' as const, label: 'Launch Visual Vibe Lab' },
-  { pattern: /\[SEO Analyzer\]/gi, toolType: 'seo' as const, label: 'Launch SEO Analyzer' },
-  { pattern: /\[Logic Auditor\]/gi, toolType: 'seo' as const, label: 'Launch Logic Auditor' },
+  // SEO Analyzer and Logic Auditor removed - not used in any course
 ];
 
 // Helper function to parse content and insert tool launch buttons
@@ -105,9 +104,10 @@ const parseContentWithToolButtons = (
 interface CourseViewProps {
   course: Course;
   initialModuleId?: string; // This might now refer to a lesson ID or we need to parse it
+  onLessonChange?: (lesson: Lesson) => void;
 }
 
-export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId }) => {
+export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId, onLessonChange }) => {
   const { user } = useAuth();
   // Flatten all lessons to find the first one easily
   const allLessons = course.modules.flatMap(m => m.lessons);
@@ -125,9 +125,20 @@ export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId 
       const foundLesson = allLessons.find(l => l.id === initialModuleId);
       if (foundLesson) {
         setActiveLesson(foundLesson);
+        // Notify parent of lesson change
+        if (onLessonChange) {
+          onLessonChange(foundLesson);
+        }
       }
     }
   }, [initialModuleId, course]);
+
+  // Notify parent when active lesson changes
+  useEffect(() => {
+    if (onLessonChange) {
+      onLessonChange(activeLesson);
+    }
+  }, [activeLesson]);
 
   const toggleModule = (modId: string) => {
     if (expandedModules.includes(modId)) {

@@ -86,41 +86,6 @@ describe('CourseView - Tool Mention Parsing', () => {
         expect(getByTestId('tool-launch-image').textContent).toBe('Launch Visual Vibe Lab');
     });
 
-    it('should parse and render SEO Analyzer tool mention', () => {
-        const content = 'Check your work with the [SEO Analyzer].';
-        const course = createMockCourse(content);
-
-        const { getByTestId } = render(<CourseView course={course} />);
-
-        expect(getByTestId('tool-launch-seo')).toBeTruthy();
-        expect(getByTestId('tool-launch-seo').textContent).toBe('Launch SEO Analyzer');
-    });
-
-    it('should parse and render Logic Auditor tool mention', () => {
-        const content = 'Validate your code with [Logic Auditor].';
-        const course = createMockCourse(content);
-
-        const { getByTestId } = render(<CourseView course={course} />);
-
-        expect(getByTestId('tool-launch-seo')).toBeTruthy();
-        expect(getByTestId('tool-launch-seo').textContent).toBe('Launch Logic Auditor');
-    });
-
-    it('should handle multiple tool mentions in the same lesson', () => {
-        const content = `
-First, use the [Campaign Generator] to create content.
-Then, use the [Image Generator] to create visuals.
-Finally, check with the [SEO Analyzer].
-        `;
-        const course = createMockCourse(content);
-
-        const { getByTestId } = render(<CourseView course={course} />);
-
-        expect(getByTestId('tool-launch-campaign')).toBeTruthy();
-        expect(getByTestId('tool-launch-image')).toBeTruthy();
-        expect(getByTestId('tool-launch-seo')).toBeTruthy();
-    });
-
     it('should not render tool buttons when no tool mentions exist', () => {
         const content = 'This is a regular lesson with no tool mentions.';
         const course = createMockCourse(content);

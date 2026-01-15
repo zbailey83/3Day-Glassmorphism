@@ -11,9 +11,7 @@ vi.mock('./tools/ImageGenLab', () => ({
     ImageGenLab: () => <div data-testid="image-tool">Image Gen Lab</div>,
 }));
 
-vi.mock('./tools/SeoAnalyzer', () => ({
-    SeoAnalyzer: () => <div data-testid="seo-tool">SEO Analyzer</div>,
-}));
+// SeoAnalyzer removed - not used in any course
 
 describe('EmbeddedTool Component', () => {
     const mockOnComplete = vi.fn();
@@ -37,11 +35,6 @@ describe('EmbeddedTool Component', () => {
     it('should render the image tool when toolType is image', () => {
         render(<EmbeddedTool {...defaultProps} toolType="image" />);
         expect(screen.getByTestId('image-tool')).toBeTruthy();
-    });
-
-    it('should render the seo tool when toolType is seo', () => {
-        render(<EmbeddedTool {...defaultProps} toolType="seo" />);
-        expect(screen.getByTestId('seo-tool')).toBeTruthy();
     });
 
     it('should display context instructions when provided', () => {

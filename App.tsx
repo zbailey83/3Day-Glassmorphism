@@ -2,19 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { CourseView } from './components/CourseView';
-import { Course, Module } from './types';
+import { Lesson } from './types';
 import { COURSES } from './constants';
-import { Menu, X } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 
 import { SplashPage } from './components/SplashPage';
 import { ProfilePage } from './components/ProfilePage';
 import { Loader2 } from 'lucide-react';
 
-// Simple view router state type
+// Simple view router state type - tools are only accessible through course lessons
 export type ViewState =
   | { type: 'dashboard' }
-  | { type: 'course'; courseId: string; moduleId?: string }
+  | { type: 'course'; courseId: string; moduleId?: string; currentLesson?: Lesson }
   | { type: 'profile' };
 
 const App: React.FC = () => {
@@ -62,7 +62,14 @@ const App: React.FC = () => {
       case 'course':
         const course = COURSES.find(c => c.id === currentView.courseId);
         if (!course) return <div>Course not found</div>;
-        return <CourseView course={course} initialModuleId={currentView.moduleId} />;
+        return <CourseView
+          course={course}
+          initialModuleId={currentView.moduleId}
+          onLessonChange={(lesson: Lesson) => {
+            // Update the view state with the current lesson
+            setCurrentView({ ...currentView, currentLesson: lesson });
+          }}
+        />;
       case 'profile':
         return <ProfilePage />;
       default:
@@ -80,13 +87,14 @@ const App: React.FC = () => {
       />
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-[280px] bg-white/80 dark:bg-[#0F172A]/85 backdrop-blur-xl border-r border-slate-200 dark:border-white/10 transform transition-transform duration-400 cubic-bezier(0.21, 0.85, 0.35, 1.0) md:relative md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`fixed inset-y-0 left-0 z-50 w-[280px] bg-white/80 dark:bg-[#0F172A]/85 backdrop-blur-xl border-r border-slate-200 dark:border-white/10 transform transition-all duration-400 cubic-bezier(0.21, 0.85, 0.35, 1.0) md:relative md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} ${currentView.type === 'course' ? 'md:opacity-60 md:hover:opacity-100' : ''}`}>
         <Sidebar
           currentView={currentView}
           onNavigate={handleNavigate}
           onCloseMobile={() => setIsMobileMenuOpen(false)}
           isDarkMode={isDarkMode}
           onToggleTheme={() => setIsDarkMode(!isDarkMode)}
+          currentLesson={currentView.type === 'course' ? currentView.currentLesson : undefined}
         />
       </div>
 

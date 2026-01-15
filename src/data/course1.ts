@@ -274,12 +274,7 @@ Try these modifications using only prompts:
 You've just experienced the fundamental workflow:
 **Describe → Generate → Test → Iterate**
 
-This loop will be your constant companion throughout your Vibe Coding journey.`,
-                    requiredTool: 'campaign',
-                    toolContext: {
-                        instructions: 'Use the Campaign Generator to create your first AI-generated Python script. Follow the lab instructions to generate a "Hello World" program with decorative output.',
-                        successCriteria: 'Successfully generate and run a Python script that prints a greeting, asks for user input, calculates Fibonacci numbers, and displays a personalized goodbye message.'
-                    }
+This loop will be your constant companion throughout your Vibe Coding journey.`
                 }
             ]
         },
@@ -291,7 +286,7 @@ This loop will be your constant companion throughout your Vibe Coding journey.`,
                     id: 'c1-m2-l1',
                     title: '2.1 Talking to the Machine',
                     duration: '18 min read',
-                    type: 'reading',
+                    type: 'lab',
                     content: `### The Art of Prompt Engineering
 
 The quality of AI output is directly proportional to the quality of your input. This lesson teaches you how to communicate effectively with AI to get the code you actually want.
@@ -314,10 +309,6 @@ The quality of AI output is directly proportional to the quality of your input. 
 - A contact form with name, email, and message fields
 - A footer with social media links
 Use HTML and Tailwind CSS. The color scheme should be warm browns (#8B4513) and cream (#FFF8DC). Make it mobile-first."
-
-### Try It Yourself
-
-Want to practice crafting better prompts? [Campaign Generator]
 
 ### The CRAFT Framework
 
@@ -385,6 +376,15 @@ Take this vague prompt and rewrite it using CRAFT:
 **Original:** "Make a todo app"
 
 Your improved version should specify the tech stack, features, styling approach, and any specific behaviors you want.`,
+                    requiredTool: 'campaign',
+                    toolContext: {
+                        instructions: 'Use the Project Spec Generator to practice creating detailed project specifications. Try describing a simple web application idea and see how the tool helps you structure it into a complete specification with features, user flows, and style guide.',
+                        prefilledData: {
+                            brainDump: 'A simple todo app for students to track assignments',
+                            techStack: 'React, TypeScript, Tailwind CSS'
+                        },
+                        successCriteria: 'Generate at least one complete project specification using the CRAFT framework principles. Review the generated PRD, feature list, and user flows to understand how detailed specifications improve development outcomes.'
+                    },
                     quiz: [
                         {
                             id: 'c1-m2-l1-q1',
@@ -519,12 +519,7 @@ Generate 5 different buggy code snippets. Time yourself fixing each one using AI
 
 Remember: Every error you encounter and fix with AI is teaching you to recognize patterns. Over time, you'll start spotting issues before you even run the code.
 
-You're not avoiding learning — you're accelerating it.`,
-                    requiredTool: 'campaign',
-                    toolContext: {
-                        instructions: 'Use the Campaign Generator to practice debugging with AI. Generate buggy code and then use AI to identify and fix the errors.',
-                        successCriteria: 'Successfully identify and fix at least 3 intentional bugs in AI-generated code using AI-assisted debugging techniques.'
-                    }
+You're not avoiding learning — you're accelerating it.`
                 },
                 {
                     id: 'c1-m2-l3',
@@ -652,11 +647,11 @@ Take a screenshot of your live site and save the URL. You'll add this to your Vi
 **Congratulations — you've completed Course 1! 🎉**`,
                     requiredTool: 'image',
                     toolContext: {
-                        instructions: 'Use the Visual Vibe Lab to generate a custom profile image or background graphics for your Link-in-Bio page. Create visually appealing assets that match your personal brand.',
+                        instructions: 'Use the Visual Vibe Lab to generate custom visual assets for your Link-in-Bio page. Create a profile image, background graphics, or decorative elements that match your personal brand and the design aesthetic of your page.',
                         prefilledData: {
-                            prompt: 'Create a modern gradient profile image for a developer learning page, with tech-inspired geometric patterns'
+                            prompt: 'Modern gradient profile avatar for a developer, geometric tech-inspired patterns, professional yet creative, purple and blue color scheme'
                         },
-                        successCriteria: 'Generate and integrate at least one custom visual asset into your deployed Link-in-Bio page.'
+                        successCriteria: 'Generate at least one custom visual asset (profile image, background, or decorative element) and successfully integrate it into your deployed Link-in-Bio page. The asset should enhance the visual appeal and match the overall design theme.'
                     }
                 }
             ]

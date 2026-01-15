@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Course } from '../types';
 import { ViewState } from '../App';
-import { PlayCircle, Clock, ArrowRight, Zap, Terminal, Layout, ShieldCheck, Code, Trophy } from 'lucide-react';
+import { PlayCircle, Clock, ArrowRight, Zap, Terminal, Layout, Code, Trophy } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { getLevelFromXP, getXPProgress, ACHIEVEMENTS, COURSE_MASCOTS } from '../src/data/gamification';
 import { AchievementsPanel } from './AchievementsPanel';
@@ -16,7 +16,7 @@ interface DashboardProps {
 
 interface ToolUsageRecord {
   id: string;
-  toolType: 'campaign' | 'image' | 'seo';
+  toolType: 'campaign' | 'image';
   lessonId: string;
   courseId: string;
   timestamp: Date;
@@ -46,7 +46,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
 
   // Extract tools used in enrolled courses
   const toolsUsedInCourses = React.useMemo(() => {
-    const toolSet = new Set<'campaign' | 'image' | 'seo'>();
+    const toolSet = new Set<'campaign' | 'image'>();
 
     courses.forEach(course => {
       course.modules.forEach(module => {
@@ -78,15 +78,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
       icon: Layout,
       color: 'cyan',
       onClick: () => onNavigate({ type: 'tool', toolName: 'image' })
-    },
-    {
-      id: 'seo' as const,
-      name: 'Auditor',
-      description: 'Code Review',
-      icon: ShieldCheck,
-      color: 'emerald',
-      onClick: () => onNavigate({ type: 'tool', toolName: 'seo' })
     }
+    // SeoAnalyzer removed - not used in any course
   ];
 
   // Filter tools to only show those used in courses
@@ -139,11 +132,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
   };
 
   // Helper to get tool name
-  const getToolName = (toolType: 'campaign' | 'image' | 'seo') => {
+  const getToolName = (toolType: 'campaign' | 'image') => {
     const toolMap = {
       campaign: 'Spec Architect',
-      image: 'Vibe Lab',
-      seo: 'Auditor'
+      image: 'Vibe Lab'
     };
     return toolMap[toolType];
   };
@@ -163,9 +155,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
       )}
 
       {/* Header & Greeting */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 animate-slide-up">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 animate-slide-up">
         <div>
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-slate-900 dark:text-white mb-2 tracking-tight">System Online, {user?.displayName?.split(' ')[0] || 'User'}.</h1>
+          <h1 className="text-4xl md:text-5xl font-display font-bold text-slate-900 dark:text-white mb-3 tracking-tight">System Online, {user?.displayName?.split(' ')[0] || 'User'}.</h1>
           <p className="text-slate-600 dark:text-[#CBD5F5] text-lg font-light">Your architectural fidelity is peaking at 2026 standards.</p>
         </div>
 
@@ -208,8 +200,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
 
       {/* Course Cards (Active Tracks) - PRIMARY FOCUS */}
       <div className="animate-slide-up delay-100">
-        <h2 className="text-4xl md:text-5xl font-display font-bold text-slate-900 dark:text-white mb-10 tracking-tight">Active Tracks</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12">
+        <h2 className="text-4xl md:text-5xl font-display font-bold text-slate-900 dark:text-white mb-8 tracking-tight">Active Tracks</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
           {courses.map(course => {
             const mascot = COURSE_MASCOTS[course.id as keyof typeof COURSE_MASCOTS];
             return (
@@ -248,9 +240,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
                     </span>
                     <button
                       onClick={() => onNavigate({ type: 'course', courseId: course.id })}
-                      className="flex items-center text-white bg-indigo-600 dark:bg-white/5 border border-transparent dark:border-white/10 px-8 py-4 rounded-full font-bold text-base hover:bg-indigo-500 hover:shadow-[0_0_25px_rgba(99,102,241,0.5)] transition-all"
+                      className="flex items-center text-white bg-gradient-to-r from-indigo-600 to-indigo-500 px-10 py-5 rounded-2xl font-bold text-lg hover:from-indigo-500 hover:to-indigo-400 hover:shadow-[0_8px_30px_rgba(99,102,241,0.6)] hover:scale-105 transition-all duration-300 shadow-lg"
                     >
-                      Sync Session <ArrowRight size={18} className="ml-2" />
+                      Sync Session <ArrowRight size={20} className="ml-2" />
                     </button>
                   </div>
                 </div>
@@ -264,7 +256,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
       {recentUsageWithinWeek.length > 0 && (
         <div className="animate-slide-up delay-150">
           <h2 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-6">Continue Where You Left Off</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {recentUsageWithinWeek.map(usage => {
               const details = getLessonDetails(usage.courseId, usage.lessonId);
               if (!details) return null;
@@ -307,8 +299,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
       {/* Tools Grid - SECONDARY FOCUS - Only show if tools are used in courses */}
       {relevantTools.length > 0 && (
         <div className="animate-slide-up delay-200">
-          <h2 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-6">Direction Suite</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <h2 className="text-xl font-display font-semibold text-slate-700 dark:text-slate-300 mb-5">Direction Suite</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {relevantTools.map(tool => {
               const colors = getToolColorClasses(tool.color);
               const Icon = tool.icon;
@@ -316,13 +308,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
                 <button
                   key={tool.id}
                   onClick={tool.onClick}
-                  className="glass-panel flex flex-col items-center justify-center p-6 rounded-[24px] hover:bg-slate-50 dark:hover:bg-white/10 hover:border-indigo-500/40 hover:-translate-y-1 transition-all group duration-300"
+                  className="glass-panel flex flex-col items-center justify-center p-5 rounded-[20px] hover:bg-slate-50 dark:hover:bg-white/10 hover:border-indigo-500/30 hover:-translate-y-0.5 transition-all group duration-300"
                 >
-                  <div className={`p-4 rounded-full ${colors.bg} ${colors.text} mb-3 group-hover:scale-110 ${colors.hover} group-hover:text-white ${colors.shadow} transition-all duration-300 border ${colors.border}`}>
-                    <Icon size={24} />
+                  <div className={`p-3 rounded-full ${colors.bg} ${colors.text} mb-2 group-hover:scale-105 ${colors.hover} group-hover:text-white ${colors.shadow} transition-all duration-300 border ${colors.border}`}>
+                    <Icon size={20} />
                   </div>
-                  <h3 className="font-bold text-slate-900 dark:text-white mb-1">{tool.name}</h3>
-                  <span className="text-xs text-slate-500 dark:text-[#94A3B8]">{tool.description}</span>
+                  <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-0.5">{tool.name}</h3>
+                  <span className="text-[11px] text-slate-500 dark:text-[#94A3B8]">{tool.description}</span>
                 </button>
               );
             })}
@@ -330,13 +322,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
             {/* External tool - always show */}
             <button
               onClick={() => window.open('https://cursor.directory', '_blank')}
-              className="glass-panel flex flex-col items-center justify-center p-6 rounded-[24px] hover:bg-slate-50 dark:hover:bg-white/10 hover:border-purple-500/40 hover:-translate-y-1 transition-all group duration-300"
+              className="glass-panel flex flex-col items-center justify-center p-5 rounded-[20px] hover:bg-slate-50 dark:hover:bg-white/10 hover:border-purple-500/30 hover:-translate-y-0.5 transition-all group duration-300"
             >
-              <div className="p-4 rounded-full bg-purple-500/10 text-purple-500 mb-3 group-hover:scale-110 group-hover:bg-purple-500 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(168,85,247,0.6)] transition-all duration-300 border border-purple-500/20">
-                <Code size={24} />
+              <div className="p-3 rounded-full bg-purple-500/10 text-purple-500 mb-2 group-hover:scale-105 group-hover:bg-purple-500 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(168,85,247,0.6)] transition-all duration-300 border border-purple-500/20">
+                <Code size={20} />
               </div>
-              <h3 className="font-bold text-slate-900 dark:text-white mb-1">Rules Dir</h3>
-              <span className="text-xs text-slate-500 dark:text-[#94A3B8]">External Repo</span>
+              <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-0.5">Rules Dir</h3>
+              <span className="text-[11px] text-slate-500 dark:text-[#94A3B8]">External Repo</span>
             </button>
           </div>
         </div>
@@ -375,9 +367,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
                 <p className="text-xs text-slate-500 dark:text-[#94A3B8] mb-3">Module 1 • Lesson 1.3</p>
                 <button
                   onClick={() => onNavigate({ type: 'course', courseId: 'course-1-vibe-coding-101', moduleId: 'c1-m1-l3' })}
-                  className="text-indigo-500 text-sm font-bold hover:text-indigo-400 transition-colors flex items-center group"
+                  className="text-indigo-600 dark:text-indigo-400 text-base font-bold hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors flex items-center group"
                 >
-                  Open Terminal <ArrowRight size={14} className="ml-1 transform group-hover:translate-x-1 transition-transform" />
+                  Open Terminal <ArrowRight size={16} className="ml-1 transform group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </div>

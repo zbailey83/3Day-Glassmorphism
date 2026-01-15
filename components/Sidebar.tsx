@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ViewState } from '../App';
-import { Home, Terminal, Layout, ShieldCheck, X, Sparkles, Sun, Moon, Zap, LogOut, Trophy } from 'lucide-react';
+import { Home, X, Sun, Moon, LogOut, Trophy, ChevronDown, ChevronRight, Terminal, Layout } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { AchievementsPanel } from './AchievementsPanel';
 import { getLevelFromXP, getXPProgress } from '../src/data/gamification';
+import { Lesson } from '../types';
 
 interface SidebarProps {
   onNavigate: (view: ViewState) => void;
@@ -13,13 +14,37 @@ interface SidebarProps {
   onCloseMobile?: () => void;
   isDarkMode: boolean;
   onToggleTheme: () => void;
+  currentLesson?: Lesson;
 }
 
 import logo from '../logo-blue.png';
 
-export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onCloseMobile, isDarkMode, onToggleTheme }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onCloseMobile, isDarkMode, onToggleTheme, currentLesson }) => {
   const { user, userProfile, signInWithGoogle, logout } = useAuth();
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
+
+  // Load collapse state from localStorage, default to collapsed
+  const [isToolsCollapsed, setIsToolsCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebar-tools-collapsed');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  // Persist collapse state to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebar-tools-collapsed', JSON.stringify(isToolsCollapsed));
+  }, [isToolsCollapsed]);
+
+  // Determine if we should show the tools section
+  // Only show when in a lab lesson with a required tool
+  const shouldShowTools = currentLesson?.type === 'lab' && currentLesson?.requiredTool;
+  const requiredTool = currentLesson?.requiredTool;
+
+  // Map tool names to display info
+  const toolInfo: Record<string, { name: string; icon: typeof Terminal; color: string }> = {
+    campaign: { name: 'Spec Architect', icon: Terminal, color: '#6366F1' },
+    image: { name: 'Visual Vibe Lab', icon: Layout, color: '#38BDF8' },
+    // seo tool removed - not used in any course
+  };
 
   const xp = userProfile?.xp || 0;
   const currentLevel = getLevelFromXP(xp);
@@ -64,34 +89,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onClo
           </button>
         </div>
 
-        <div className="mb-8">
-          <h2 className="text-[11px] font-bold text-slate-400 dark:text-[#64748B] uppercase tracking-[0.15em] mb-4 px-5">Directing Tools</h2>
-
-          <button
-            onClick={() => handleNav({ type: 'tool', toolName: 'campaign' })}
-            className={navItemClass(currentView.type === 'tool' && currentView.toolName === 'campaign')}
-          >
-            <Terminal size={20} className={`mr-3 stroke-[1.75px] ${currentView.type === 'tool' && currentView.toolName === 'campaign' ? 'text-[#6366F1]' : 'text-slate-400 dark:text-[#64748B] group-hover:text-slate-600 dark:group-hover:text-[#CBD5F5]'}`} />
-            <span className="font-medium text-[15px]">Spec Architect</span>
-          </button>
-
-          <button
-            onClick={() => handleNav({ type: 'tool', toolName: 'image' })}
-            className={navItemClass(currentView.type === 'tool' && currentView.toolName === 'image')}
-          >
-            <Layout size={20} className={`mr-3 stroke-[1.75px] ${currentView.type === 'tool' && currentView.toolName === 'image' ? 'text-[#38BDF8]' : 'text-slate-400 dark:text-[#64748B] group-hover:text-slate-600 dark:group-hover:text-[#CBD5F5]'}`} />
-            <span className="font-medium text-[15px]">Visual Vibe Lab</span>
-          </button>
-
-          <button
-            onClick={() => handleNav({ type: 'tool', toolName: 'seo' })}
-            className={navItemClass(currentView.type === 'tool' && currentView.toolName === 'seo')}
-          >
-            <ShieldCheck size={20} className={`mr-3 stroke-[1.75px] ${currentView.type === 'tool' && currentView.toolName === 'seo' ? 'text-[#22C55E]' : 'text-slate-400 dark:text-[#64748B] group-hover:text-slate-600 dark:group-hover:text-[#CBD5F5]'}`} />
-            <span className="font-medium text-[15px]">Logic Auditor</span>
-          </button>
-        </div>
-
         {/* Achievements Section */}
         <div className="mb-8">
           <h2 className="text-[11px] font-bold text-slate-400 dark:text-[#64748B] uppercase tracking-[0.15em] mb-4 px-5">Progress</h2>
@@ -103,6 +100,48 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onClo
             <span className="font-medium text-[15px]">Achievements</span>
             <span className="ml-auto text-[10px] font-bold bg-[#F59E0B]/10 text-[#F59E0B] px-2 py-1 rounded-full">NEW</span>
           </button>
+        </div>
+
+        {/* Tools section - hidden on mobile unless in a lab lesson with required tool */}
+        <div className={`mb-8 ${!shouldShowTools ? 'hidden md:block' : ''}`}>
+          <button
+            onClick={() => setIsToolsCollapsed(!isToolsCollapsed)}
+            className="flex items-center justify-between w-full px-5 mb-4 group"
+          >
+            <h2 className="text-[11px] font-bold text-slate-400 dark:text-[#64748B] uppercase tracking-[0.15em]">
+              Directing Tools
+            </h2>
+            {isToolsCollapsed ? (
+              <ChevronRight size={14} className="text-slate-400 dark:text-[#64748B] group-hover:text-slate-600 dark:group-hover:text-[#94A3B8] transition-colors" />
+            ) : (
+              <ChevronDown size={14} className="text-slate-400 dark:text-[#64748B] group-hover:text-slate-600 dark:group-hover:text-[#94A3B8] transition-colors" />
+            )}
+          </button>
+
+          {!isToolsCollapsed && shouldShowTools && requiredTool && toolInfo[requiredTool] && (
+            <div className="space-y-2">
+              {/* Only show the tool required for the current lesson */}
+              <div className="px-5 py-3.5 mb-2 rounded-[14px] border border-l-[3px] border-l-[#38BDF8] border-t-white/50 dark:border-t-white/5 border-r-transparent border-b-transparent bg-gradient-to-r from-slate-100/80 to-transparent dark:from-white/10 text-slate-900 dark:text-white shadow-[0px_4px_20px_rgba(0,0,0,0.05)] dark:shadow-[0px_4px_20px_rgba(0,0,0,0.2)]">
+                <div className="flex items-center">
+                  {React.createElement(toolInfo[requiredTool].icon, {
+                    size: 20,
+                    className: `mr-3 stroke-[1.75px]`,
+                    style: { color: toolInfo[requiredTool].color }
+                  })}
+                  <span className="font-medium text-[15px]">{toolInfo[requiredTool].name}</span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-[#94A3B8] mt-1 ml-8">
+                  Required for this lesson
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!isToolsCollapsed && !shouldShowTools && (
+            <div className="px-5 py-3 text-sm text-slate-400 dark:text-[#64748B] italic">
+              Tools appear here when needed in lab lessons
+            </div>
+          )}
         </div>
       </nav>
 
@@ -147,7 +186,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onClo
                 <p className="text-[10px] text-slate-500 dark:text-[#94A3B8]">{xp} XP • ⚡ {userProfile?.streakDays || 1} day streak</p>
               </div>
               <button
-                onClick={(e) => { e.stopPropagation(); logout(); }}
+                onClick={(e: React.MouseEvent) => { e.stopPropagation(); logout(); }}
                 className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 hover:text-red-500 transition-colors rounded-full"
                 title="Sign Out"
               >

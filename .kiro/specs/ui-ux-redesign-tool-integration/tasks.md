@@ -107,22 +107,23 @@ This implementation plan transforms the VIBE DEV 2026 platform from a tool-centr
     - **Validates: Requirements 4.4**
 
 - [ ] 7. Redesign Sidebar component
-  - [ ] 7.1 Reorder sidebar sections
+  - [x] 7.1 Reorder sidebar sections
     - Move "Directing Tools" section below progress indicators
     - Ensure main navigation and progress appear first
     - _Requirements: 5.3_
 
-  - [ ]* 7.2 Write property test for sidebar ordering
+  - [ ] 7.2 Write property test for sidebar ordering
+
     - **Property 10: Sidebar Section Ordering**
     - **Validates: Requirements 5.3**
 
-  - [ ] 7.3 Implement collapsible tools section
+  - [x] 7.3 Implement collapsible tools section
     - Add collapse/expand functionality to tools section
     - Set default state to collapsed
     - Persist collapse state in localStorage
     - _Requirements: 5.5_
 
-  - [ ] 7.4 Implement context-aware tool visibility
+  - [x] 7.4 Implement context-aware tool visibility
     - Accept currentLesson prop in Sidebar
     - Hide tools section when not in a lab lesson
     - Highlight only relevant tool when in lab lesson
@@ -133,7 +134,7 @@ This implementation plan transforms the VIBE DEV 2026 platform from a tool-centr
     - **Property 9: Sidebar Tool Highlighting**
     - **Validates: Requirements 5.1, 5.2**
 
-  - [ ] 7.6 Remove tools with no course associations
+  - [x] 7.6 Remove tools with no course associations
     - Identify tools not used in any course
     - Remove navigation items for unused tools
     - _Requirements: 5.4_
@@ -142,8 +143,8 @@ This implementation plan transforms the VIBE DEV 2026 platform from a tool-centr
     - **Property 11: Tool Launch Button Presence**
     - **Validates: Requirements 5.4**
 
-- [ ] 8. Implement mobile responsive behavior
-  - [ ] 8.1 Hide standalone tool navigation on mobile
+- [-] 8. Implement mobile responsive behavior
+  - [x] 8.1 Hide standalone tool navigation on mobile
     - Add media query to hide tools section on viewports < 768px
     - Show tools only when in relevant lab lesson
     - _Requirements: 8.1_
@@ -152,7 +153,7 @@ This implementation plan transforms the VIBE DEV 2026 platform from a tool-centr
     - **Property 15: Mobile Tool Navigation Hiding**
     - **Validates: Requirements 8.1**
 
-  - [ ] 8.3 Implement full-screen tool modals on mobile
+  - [x] 8.3 Implement full-screen tool modals on mobile
     - Detect mobile viewport in EmbeddedTool component
     - Render tool in full-screen modal on mobile
     - Add exit button at top of modal
@@ -162,7 +163,7 @@ This implementation plan transforms the VIBE DEV 2026 platform from a tool-centr
     - **Property 16: Mobile Tool Modal Display**
     - **Validates: Requirements 8.2**
 
-  - [ ] 8.5 Prioritize course navigation on mobile
+  - [x] 8.5 Prioritize course navigation on mobile
     - Reorder mobile menu to show courses before tools
     - Ensure course links appear first in DOM order
     - _Requirements: 8.3, 8.4_
@@ -175,7 +176,7 @@ This implementation plan transforms the VIBE DEV 2026 platform from a tool-centr
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 10. Implement error handling and edge cases
-  - [ ] 10.1 Create ToolErrorBoundary component
+  - [x] 10.1 Create ToolErrorBoundary component
     - Catch tool loading errors
     - Display user-friendly error message
     - Provide retry functionality
@@ -186,13 +187,13 @@ This implementation plan transforms the VIBE DEV 2026 platform from a tool-centr
     - **Property 20: Tool Error Handling**
     - **Validates: Requirements 9.3**
 
-  - [ ] 10.3 Implement tool state persistence
+  - [x] 10.3 Implement tool state persistence
     - Save tool state to localStorage on navigation away
     - Restore state when user returns within 24 hours
     - Clear old saved states
     - _Requirements: 2.3_
 
-  - [ ] 10.4 Implement focus management
+  - [x] 10.4 Implement focus management
     - Return focus to lesson content when tool modal closes
     - Ensure keyboard navigation works correctly
     - _Requirements: 7.4_
@@ -201,7 +202,7 @@ This implementation plan transforms the VIBE DEV 2026 platform from a tool-centr
     - **Property 14: Focus Return After Tool Close**
     - **Validates: Requirements 7.4**
 
-  - [ ] 10.6 Add save/export functionality to tools
+  - [x] 10.6 Add save/export functionality to tools
     - Add export buttons to tool output areas
     - Implement download functionality for generated content
     - _Requirements: 9.2_
@@ -210,21 +211,21 @@ This implementation plan transforms the VIBE DEV 2026 platform from a tool-centr
     - **Property 19: Tool Output Export**
     - **Validates: Requirements 9.2**
 
-- [ ] 11. Update App.tsx navigation logic
-  - [ ] 11.1 Remove standalone tool routes
+- [x] 11. Update App.tsx navigation logic
+  - [x] 11.1 Remove standalone tool routes
     - Remove tool cases from ViewState type
     - Remove tool rendering in renderContent function
     - Update navigation handlers to prevent direct tool access
     - _Requirements: 6.2, 6.4, 6.5_
 
-  - [ ] 11.2 Pass lesson context to Sidebar
+  - [x] 11.2 Pass lesson context to Sidebar
     - Extract current lesson from CourseView state
     - Pass currentLesson prop to Sidebar component
     - Update Sidebar to use lesson context for tool visibility
     - _Requirements: 5.1, 5.2_
 
-- [ ] 12. Implement visual hierarchy improvements
-  - [ ] 12.1 Update styling for primary vs secondary actions
+- [x] 12. Implement visual hierarchy improvements
+  - [x] 12.1 Update styling for primary vs secondary actions
     - Increase size and prominence of primary actions
     - Reduce visual weight of secondary actions
     - Ensure consistent button hierarchy across pages
@@ -234,32 +235,32 @@ This implementation plan transforms the VIBE DEV 2026 platform from a tool-centr
     - **Property 21: Interactive Element Limit**
     - **Validates: Requirements 10.5**
 
-  - [ ] 12.3 De-emphasize navigation when in course
+  - [x] 12.3 De-emphasize navigation when in course
     - Reduce opacity or size of sidebar when in course view
     - Add subtle visual cues to keep focus on content
     - _Requirements: 10.3_
 
-  - [ ] 12.4 Ensure consistent spacing and typography
+  - [x] 12.4 Ensure consistent spacing and typography
     - Audit spacing values across components
     - Standardize typography scale
     - Apply consistent section separators
     - _Requirements: 10.4_
 
-- [ ] 13. Update course data with tool requirements
-  - [ ] 13.1 Identify lessons that should use tools
+- [x] 13. Update course data with tool requirements
+  - [x] 13.1 Identify lessons that should use tools
     - Review course content to find lab lessons
     - Determine which tool each lab lesson requires
     - Add requiredTool field to appropriate lessons
     - _Requirements: 1.5, 3.1_
 
-  - [ ] 13.2 Add toolContext to lessons
+  - [x] 13.2 Add toolContext to lessons
     - Write instructions for each tool-based lesson
     - Add pre-filled data where appropriate
     - Define success criteria for tool tasks
     - _Requirements: 7.3, 7.5_
 
-- [ ] 14. Final integration and cleanup
-  - [ ] 14.1 Remove unused tool files
+- [x] 14. Final integration and cleanup
+  - [x] 14.1 Remove unused tool files
     - Identify tools not used in any course
     - Remove component files for unused tools
     - Remove service functions for unused tools
