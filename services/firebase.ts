@@ -221,6 +221,16 @@ export const createGalleryItem = async (item: Omit<GalleryItem, 'id'>) => {
     try {
         const docRef = await addDoc(collection(db, 'gallery'), item);
         console.log("Gallery item created with ID:", docRef.id);
+
+        // Award XP for project upload
+        try {
+            const { uploadProject } = await import('./xpService');
+            await uploadProject(item.userId, docRef.id);
+        } catch (xpError) {
+            console.error("Error awarding XP for project upload:", xpError);
+            // Don't throw - XP award failure shouldn't break the upload
+        }
+
         return { id: docRef.id, ...item };
     } catch (error) {
         console.error("Error creating gallery item:", error);
@@ -309,6 +319,25 @@ export const toggleProjectLike = async (userId: string, projectId: string, isLik
         await updateDoc(projectRef, {
             likes: increment(1)
         });
+
+        // Award XP to the project owner for receiving a like
+        try {
+            // Get the project to find the owner
+            const projectSnap = await getDoc(projectRef);
+            if (projectSnap.exists()) {
+                const projectData = projectSnap.data() as GalleryItem;
+                const projectOwnerId = projectData.userId;
+
+                // Don't award XP if user likes their own project
+                if (projectOwnerId !== userId) {
+                    const { receiveProjectLike } = await import('./xpService');
+                    await receiveProjectLike(projectOwnerId, projectId);
+                }
+            }
+        } catch (xpError) {
+            console.error("Error awarding XP for project like:", xpError);
+            // Don't throw - XP award failure shouldn't break the like
+        }
     }
 };
 

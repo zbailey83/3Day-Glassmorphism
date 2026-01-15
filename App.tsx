@@ -6,6 +6,7 @@ import { Lesson } from './types';
 import { COURSES } from './constants';
 import { Menu } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
+import { NotificationContainer } from './components/notifications/NotificationContainer';
 
 import { SplashPage } from './components/SplashPage';
 import { ProfilePage } from './components/ProfilePage';
@@ -79,6 +80,9 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex h-screen overflow-hidden selection:bg-[#38BDF8] selection:text-[#020712] transition-colors duration-300 ${isDarkMode ? 'text-[#F9FAFB]' : 'text-[#0F172A]'}`}>
+      {/* Notification Container */}
+      <NotificationContainer />
+
       {/* Mobile Menu Overlay */}
       <div
         className={`fixed inset-0 bg-black/60 backdrop-blur-md z-40 transition-opacity duration-300 md:hidden ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'

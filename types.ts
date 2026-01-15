@@ -51,10 +51,39 @@ export interface ProjectSpec {
     };
 }
 
-export interface UserProgress {
+export interface CourseProgress {
     courseId: string;
+    completedLessons: string[]; // lesson IDs
     completedModules: string[]; // module IDs
-    lastPlayed: Date;
+    lastPlayed: any; // Firestore Timestamp
+    courseCompleted: boolean;
+}
+
+export interface XPTransaction {
+    userId: string;
+    amount: number;
+    reason: string;
+    timestamp: any; // Firestore Timestamp
+    metadata?: {
+        courseId?: string;
+        lessonId?: string;
+        achievementId?: string;
+    };
+}
+
+export interface AchievementUnlock {
+    userId: string;
+    achievementId: string;
+    unlockedAt: any; // Firestore Timestamp
+    xpAwarded: number;
+}
+
+export interface DailyChallengeProgress {
+    userId: string;
+    challengeId: string;
+    completedAt: any; // Firestore Timestamp
+    xpAwarded: number;
+    date: string; // YYYY-MM-DD format for daily reset
 }
 
 export interface UserProfile {
@@ -70,8 +99,9 @@ export interface UserProfile {
     level: number;
     streakDays: number;
     lastLogin: any; // Firestore Timestamp
+    unlockedAchievements: string[]; // achievement IDs
     enrolledCourses: string[]; // course IDs
-    courseProgress: UserProgress[]; // Detailed progress
+    courseProgress: CourseProgress[]; // Detailed progress
     savedProjects: string[]; // gallery IDs
     likedProjects: string[]; // gallery IDs
 }
