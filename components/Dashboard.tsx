@@ -4,7 +4,6 @@ import { createPortal } from 'react-dom';
 import { Course } from '../types';
 import { ViewState } from '../App';
 import { PlayCircle, Clock, ArrowRight, Zap, Terminal, Layout, ShieldCheck, Code, Trophy } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useAuth } from '../hooks/useAuth';
 import { getLevelFromXP, getXPProgress, ACHIEVEMENTS, COURSE_MASCOTS } from '../src/data/gamification';
 import { AchievementsPanel } from './AchievementsPanel';
@@ -13,13 +12,6 @@ interface DashboardProps {
   courses: Course[];
   onNavigate: (view: ViewState) => void;
 }
-
-const skillData = [
-  { name: 'Directing', score: 88 },
-  { name: 'Arch', score: 72 },
-  { name: 'Visuals', score: 65 },
-  { name: 'Auditing', score: 91 },
-];
 
 export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => {
   const { user, userProfile } = useAuth();
@@ -187,47 +179,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
 
       {/* Stats Section (Moved to Bottom) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 animate-slide-up delay-300">
-        <div className="glass-panel p-8 rounded-[24px] lg:col-span-2 hover:border-slate-300 dark:hover:border-white/20 transition-all duration-300">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-2xl font-display font-bold text-slate-900 dark:text-white">Director Aptitude</h3>
-            <button className="text-xs font-bold text-indigo-500 bg-indigo-500/10 px-4 py-2 rounded-full hover:bg-indigo-500/20 transition-colors border border-indigo-500/20 uppercase tracking-widest">Calibration</button>
-          </div>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={skillData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.2)" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontSize: 12, fontWeight: 500 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontSize: 12 }} />
-                <Tooltip
-                  cursor={{ fill: 'rgba(99, 102, 241, 0.05)' }}
-                  contentStyle={{
-                    borderRadius: '16px',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    background: 'rgba(15, 23, 42, 0.9)',
-                    backdropFilter: 'blur(12px)',
-                    color: '#fff',
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
-                  }}
-                  itemStyle={{ color: '#fff' }}
-                />
-                <Bar dataKey="score" radius={[6, 6, 6, 6]} barSize={40} animationDuration={1500}>
-                  {skillData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill="url(#vibeGradient)" />
-                  ))}
-                </Bar>
-                <defs>
-                  <linearGradient id="vibeGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#38BDF8" stopOpacity={1} />
-                    <stop offset="100%" stopColor="#6366F1" stopOpacity={0.8} />
-                  </linearGradient>
-                </defs>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
         {/* Operational Mastery - Original Stats Card */}
-        <div className="space-y-6 md:space-y-8 flex flex-col">
+        <div className="space-y-6 md:space-y-8 flex flex-col lg:col-span-3">
           <div
             onClick={() => onNavigate({ type: 'profile' })}
             className="flex-1 bg-gradient-to-br from-indigo-500/10 via-blue-500/5 to-cyan-500/10 dark:from-indigo-900/40 dark:to-blue-900/20 p-8 rounded-[24px] border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-[0_0_40px_rgba(99,102,241,0.1)] text-slate-900 dark:text-white relative overflow-hidden group hover:border-indigo-400/30 transition-all duration-300 cursor-pointer active:scale-[0.99]"

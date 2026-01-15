@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { CourseView } from './components/CourseView';
-import { CampaignGenerator } from './components/tools/CampaignGenerator';
-import { ImageGenLab } from './components/tools/ImageGenLab';
-import { SeoAnalyzer } from './components/tools/SeoAnalyzer';
 import { Course, Module } from './types';
 import { COURSES } from './constants';
 import { Menu, X } from 'lucide-react';
@@ -18,7 +15,6 @@ import { Loader2 } from 'lucide-react';
 export type ViewState =
   | { type: 'dashboard' }
   | { type: 'course'; courseId: string; moduleId?: string }
-  | { type: 'tool'; toolName: 'campaign' | 'image' | 'seo'; action?: 'openLibrary' }
   | { type: 'profile' };
 
 const App: React.FC = () => {
@@ -67,13 +63,6 @@ const App: React.FC = () => {
         const course = COURSES.find(c => c.id === currentView.courseId);
         if (!course) return <div>Course not found</div>;
         return <CourseView course={course} initialModuleId={currentView.moduleId} />;
-      case 'tool':
-        switch (currentView.toolName) {
-          case 'campaign': return <CampaignGenerator />;
-          case 'image': return <ImageGenLab initialAction={currentView.action} />;
-          case 'seo': return <SeoAnalyzer />;
-          default: return <div>Tool not found</div>;
-        }
       case 'profile':
         return <ProfilePage />;
       default:

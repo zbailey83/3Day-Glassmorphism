@@ -7,6 +7,12 @@ export interface QuizQuestion {
     explanation: string;
 }
 
+export interface ToolContext {
+    instructions?: string;
+    prefilledData?: Record<string, any>;
+    successCriteria?: string;
+}
+
 export interface Lesson {
     id: string;
     title: string;
@@ -14,6 +20,8 @@ export interface Lesson {
     content: string;
     type: 'video' | 'reading' | 'lab';
     quiz?: QuizQuestion[];
+    requiredTool?: 'campaign' | 'image' | 'seo';
+    toolContext?: ToolContext;
 }
 
 export interface Module {
@@ -66,6 +74,16 @@ export interface UserProfile {
     courseProgress: UserProgress[]; // Detailed progress
     savedProjects: string[]; // gallery IDs
     likedProjects: string[]; // gallery IDs
+}
+
+export interface ToolUsage {
+    userId: string;
+    toolType: 'campaign' | 'image' | 'seo';
+    lessonId: string;
+    courseId: string;
+    timestamp: Date;
+    completed: boolean;
+    result?: any;
 }
 
 export interface GalleryItem {

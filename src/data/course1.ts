@@ -274,7 +274,12 @@ Try these modifications using only prompts:
 You've just experienced the fundamental workflow:
 **Describe → Generate → Test → Iterate**
 
-This loop will be your constant companion throughout your Vibe Coding journey.`
+This loop will be your constant companion throughout your Vibe Coding journey.`,
+                    requiredTool: 'campaign',
+                    toolContext: {
+                        instructions: 'Use the Campaign Generator to create your first AI-generated Python script. Follow the lab instructions to generate a "Hello World" program with decorative output.',
+                        successCriteria: 'Successfully generate and run a Python script that prints a greeting, asks for user input, calculates Fibonacci numbers, and displays a personalized goodbye message.'
+                    }
                 }
             ]
         },
@@ -510,7 +515,12 @@ Generate 5 different buggy code snippets. Time yourself fixing each one using AI
 
 Remember: Every error you encounter and fix with AI is teaching you to recognize patterns. Over time, you'll start spotting issues before you even run the code.
 
-You're not avoiding learning — you're accelerating it.`
+You're not avoiding learning — you're accelerating it.`,
+                    requiredTool: 'campaign',
+                    toolContext: {
+                        instructions: 'Use the Campaign Generator to practice debugging with AI. Generate buggy code and then use AI to identify and fix the errors.',
+                        successCriteria: 'Successfully identify and fix at least 3 intentional bugs in AI-generated code using AI-assisted debugging techniques.'
+                    }
                 },
                 {
                     id: 'c1-m2-l3',
@@ -631,7 +641,15 @@ This is Vibe Coding. You're no longer learning to code — you're learning to sh
 
 Take a screenshot of your live site and save the URL. You'll add this to your Vibe Dev portfolio as proof of completion.
 
-**Congratulations — you've completed Course 1! 🎉**`
+**Congratulations — you've completed Course 1! 🎉**`,
+                    requiredTool: 'image',
+                    toolContext: {
+                        instructions: 'Use the Visual Vibe Lab to generate a custom profile image or background graphics for your Link-in-Bio page. Create visually appealing assets that match your personal brand.',
+                        prefilledData: {
+                            prompt: 'Create a modern gradient profile image for a developer learning page, with tech-inspired geometric patterns'
+                        },
+                        successCriteria: 'Generate and integrate at least one custom visual asset into your deployed Link-in-Bio page.'
+                    }
                 }
             ]
         }

@@ -4,6 +4,103 @@ import { CheckCircle, PlayCircle, FileText, HelpCircle, ChevronRight, AlertCircl
 import { useAuth } from '../hooks/useAuth';
 import { updateModuleProgress, addXP } from '../services/firebase';
 import { COURSE_MASCOTS } from '../src/data/gamification';
+import { EmbeddedTool } from './EmbeddedTool';
+import { ToolLaunchButton } from './ToolLaunchButton';
+
+// Tool mention patterns to detect in lesson content
+const TOOL_PATTERNS = [
+  { pattern: /\[Campaign Generator\]/gi, toolType: 'campaign' as const, label: 'Launch Campaign Generator' },
+  { pattern: /\[Image Generator\]/gi, toolType: 'image' as const, label: 'Launch Image Generator' },
+  { pattern: /\[Visual Vibe Lab\]/gi, toolType: 'image' as const, label: 'Launch Visual Vibe Lab' },
+  { pattern: /\[SEO Analyzer\]/gi, toolType: 'seo' as const, label: 'Launch SEO Analyzer' },
+  { pattern: /\[Logic Auditor\]/gi, toolType: 'seo' as const, label: 'Launch Logic Auditor' },
+];
+
+// Helper function to parse content and insert tool launch buttons
+const parseContentWithToolButtons = (
+  content: string,
+  lessonId: string,
+  courseId: string
+): React.ReactNode[] => {
+  const lines = content.split('\n');
+  const elements: React.ReactNode[] = [];
+
+  lines.forEach((line, i) => {
+    let processedLine = line;
+    let hasToolMention = false;
+    let toolMatch: { toolType: 'campaign' | 'image' | 'seo'; label: string } | null = null;
+
+    // Check if line contains a tool mention
+    for (const { pattern, toolType, label } of TOOL_PATTERNS) {
+      if (pattern.test(line)) {
+        hasToolMention = true;
+        toolMatch = { toolType, label };
+        // Remove the tool mention marker from the line
+        processedLine = line.replace(pattern, '');
+        break;
+      }
+    }
+
+    // Render the line content
+    if (processedLine.trim().startsWith('###')) {
+      elements.push(
+        <h3 key={i} className="text-xl font-display font-bold mt-10 mb-4 text-slate-900 dark:text-[#F9FAFB]">
+          {processedLine.replace('###', '').replace(/\*/g, '')}
+        </h3>
+      );
+    } else if (processedLine.trim().startsWith('**') && processedLine.trim().endsWith('**')) {
+      elements.push(
+        <h4 key={i} className="font-bold mt-6 mb-2 text-slate-800 dark:text-white">
+          {processedLine.replace(/\*\*/g, '')}
+        </h4>
+      );
+    } else if (processedLine.trim().startsWith('1.')) {
+      elements.push(
+        <div key={i} className="ml-4 mb-3 flex items-start">
+          <span className="font-bold mr-3 text-[#38BDF8]">{processedLine.substring(0, 2)}</span>
+          <span className="text-slate-600 dark:text-[#CBD5F5]">{processedLine.substring(2)}</span>
+        </div>
+      );
+    } else if (processedLine.trim().startsWith('-')) {
+      elements.push(
+        <li key={i} className="ml-6 mb-2 list-disc marker:text-[#38BDF8] text-slate-600 dark:text-[#CBD5F5]">
+          {processedLine.replace('-', '')}
+        </li>
+      );
+    } else if (processedLine.trim().startsWith('*')) {
+      elements.push(
+        <li key={i} className="ml-6 mb-2 list-disc marker:text-[#38BDF8] text-slate-600 dark:text-[#CBD5F5]">
+          {processedLine.replace('*', '')}
+        </li>
+      );
+    } else if (processedLine.trim() === '') {
+      elements.push(<br key={i} />);
+    } else {
+      elements.push(
+        <p key={i} className="mb-4 leading-relaxed text-slate-600 dark:text-[#CBD5F5]">
+          {processedLine}
+        </p>
+      );
+    }
+
+    // Add tool launch button if tool mention was detected
+    if (hasToolMention && toolMatch) {
+      elements.push(
+        <div key={`tool-${i}`} className="my-4">
+          <ToolLaunchButton
+            toolType={toolMatch.toolType}
+            label={toolMatch.label}
+            variant="inline"
+            lessonId={lessonId}
+            courseId={courseId}
+          />
+        </div>
+      );
+    }
+  });
+
+  return elements;
+};
 
 interface CourseViewProps {
   course: Course;
@@ -104,15 +201,7 @@ export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId 
 
           {/* Simulated Content Rendering */}
           <div className="prose prose-lg prose-invert max-w-none mb-12 font-light">
-            {activeLesson.content.split('\n').map((line, i) => {
-              if (line.trim().startsWith('###')) return <h3 key={i} className="text-xl font-display font-bold mt-10 mb-4 text-slate-900 dark:text-[#F9FAFB]">{line.replace('###', '').replace(/\*/g, '')}</h3>;
-              if (line.trim().startsWith('**') && line.trim().endsWith('**')) return <h4 key={i} className="font-bold mt-6 mb-2 text-slate-800 dark:text-white">{line.replace(/\*\*/g, '')}</h4>;
-              if (line.trim().startsWith('1.')) return <div key={i} className="ml-4 mb-3 flex items-start"><span className="font-bold mr-3 text-[#38BDF8]">{line.substring(0, 2)}</span><span className="text-slate-600 dark:text-[#CBD5F5]">{line.substring(2)}</span></div>;
-              if (line.trim().startsWith('-')) return <li key={i} className="ml-6 mb-2 list-disc marker:text-[#38BDF8] text-slate-600 dark:text-[#CBD5F5]">{line.replace('-', '')}</li>;
-              if (line.trim().startsWith('*')) return <li key={i} className="ml-6 mb-2 list-disc marker:text-[#38BDF8] text-slate-600 dark:text-[#CBD5F5]">{line.replace('*', '')}</li>;
-              if (line.trim() === '') return <br key={i} />;
-              return <p key={i} className="mb-4 leading-relaxed text-slate-600 dark:text-[#CBD5F5]">{line}</p>;
-            })}
+            {parseContentWithToolButtons(activeLesson.content, activeLesson.id, course.id)}
           </div>
 
           {/* Quiz Section */}
@@ -131,18 +220,37 @@ export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId 
           )}
 
           {activeLesson.type === 'lab' && (
-            <div className="bg-gradient-to-br from-[#F59E0B]/5 to-transparent border border-[#F59E0B]/20 rounded-[24px] p-8 mt-8 flex flex-col sm:flex-row items-start gap-5 animate-fade-in hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] transition-shadow">
-              <div className="p-3 bg-[#F59E0B]/10 dark:bg-[#F59E0B]/20 rounded-xl shadow-sm dark:shadow-[0_0_15px_rgba(245,158,11,0.4)] text-[#F59E0B] flex-shrink-0 border border-[#F59E0B]/30">
-                <CheckCircle size={24} />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 font-display">Interactive Lab Required</h3>
-                <p className="text-slate-600 dark:text-[#94A3B8] mb-5 text-sm leading-relaxed">This lesson requires you to use the AI Tools to complete the assignment. The best way to learn is by doing.</p>
-                <div className="inline-flex items-center text-amber-600 dark:text-[#FCD34D] text-sm font-bold bg-[#F59E0B]/10 px-5 py-2.5 rounded-full shadow-sm border border-[#F59E0B]/20 hover:bg-[#F59E0B]/20 transition-colors cursor-pointer">
-                  Go to AI Tools in Sidebar <ArrowRight size={14} className="ml-2" />
+            <>
+              {activeLesson.requiredTool ? (
+                // Render embedded tool when requiredTool is specified
+                <div className="bg-gradient-to-br from-[#6366F1]/5 to-transparent border border-[#6366F1]/20 rounded-[24px] p-8 mt-8 animate-fade-in">
+                  <div className="mb-6">
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 font-display">Interactive Lab Tool</h3>
+                    <p className="text-slate-600 dark:text-[#94A3B8] text-sm">Complete this hands-on exercise using the tool below.</p>
+                  </div>
+                  <EmbeddedTool
+                    toolType={activeLesson.requiredTool}
+                    context={activeLesson.toolContext}
+                    lessonId={activeLesson.id}
+                    courseId={course.id}
+                  />
                 </div>
-              </div>
-            </div>
+              ) : (
+                // Fallback for lab lessons without a specific tool
+                <div className="bg-gradient-to-br from-[#F59E0B]/5 to-transparent border border-[#F59E0B]/20 rounded-[24px] p-8 mt-8 flex flex-col sm:flex-row items-start gap-5 animate-fade-in hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] transition-shadow">
+                  <div className="p-3 bg-[#F59E0B]/10 dark:bg-[#F59E0B]/20 rounded-xl shadow-sm dark:shadow-[0_0_15px_rgba(245,158,11,0.4)] text-[#F59E0B] flex-shrink-0 border border-[#F59E0B]/30">
+                    <CheckCircle size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 font-display">Interactive Lab Required</h3>
+                    <p className="text-slate-600 dark:text-[#94A3B8] mb-5 text-sm leading-relaxed">This lesson requires you to use the AI Tools to complete the assignment. The best way to learn is by doing.</p>
+                    <div className="inline-flex items-center text-amber-600 dark:text-[#FCD34D] text-sm font-bold bg-[#F59E0B]/10 px-5 py-2.5 rounded-full shadow-sm border border-[#F59E0B]/20 hover:bg-[#F59E0B]/20 transition-colors cursor-pointer">
+                      Go to AI Tools in Sidebar <ArrowRight size={14} className="ml-2" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
