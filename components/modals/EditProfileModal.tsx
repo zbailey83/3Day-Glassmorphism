@@ -52,7 +52,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
         setUploadError(null);
         setAvatarUploadProgress(0);
         setBannerUploadProgress(0);
-        console.log("Starting profile update...");
+        console.log("[EditProfile] Starting profile update...");
 
         try {
             let photoURL = initialData.photoURL ?? null;
@@ -63,35 +63,37 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
 
             // 1. Upload new avatar if selected
             if (avatarFile) {
-                console.log("Uploading avatar...");
+                console.log("[EditProfile] Queuing avatar upload...");
                 const avatarPath = `avatars/${user.uid}/${Date.now()}_${avatarFile.name}`;
                 const avatarPromise = uploadFile(avatarFile, avatarPath, setAvatarUploadProgress)
                     .then(url => {
                         photoURL = url;
-                        console.log("Avatar uploaded:", photoURL);
+                        console.log("[EditProfile] Avatar uploaded:", photoURL);
                     });
                 uploadPromises.push(avatarPromise);
             }
 
             // 2. Upload new banner if selected
             if (bannerFile) {
-                console.log("Uploading banner...");
+                console.log("[EditProfile] Queuing banner upload...");
                 const bannerPath = `banners/${user.uid}/${Date.now()}_${bannerFile.name}`;
                 const bannerPromise = uploadFile(bannerFile, bannerPath, setBannerUploadProgress)
                     .then(url => {
                         bannerURL = url;
-                        console.log("Banner uploaded:", bannerURL);
+                        console.log("[EditProfile] Banner uploaded:", bannerURL);
                     });
                 uploadPromises.push(bannerPromise);
             }
 
             // Wait for all uploads to complete concurrently
             if (uploadPromises.length > 0) {
+                console.log("[EditProfile] Waiting for uploads to complete...");
                 await Promise.all(uploadPromises);
+                console.log("[EditProfile] All uploads completed");
             }
 
             // 3. Update Firestore Profile with timeout
-            console.log("Updating Firestore profile...");
+            console.log("[EditProfile] Updating Firestore profile...");
             const updates: Partial<UserProfile> = {
                 displayName,
                 bio,
@@ -107,12 +109,12 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
             );
 
             await Promise.race([firestoreUpdatePromise, firestoreTimeout]);
-            console.log("Firestore updated");
+            console.log("[EditProfile] Firestore updated");
 
             // 4. Update Firebase Auth Profile (for consistency across app)
             const currentUser = auth.currentUser;
             if (currentUser) {
-                console.log("Updating Auth profile...");
+                console.log("[EditProfile] Updating Auth profile...");
                 const authUpdatePromise = updateProfile(currentUser, {
                     displayName: displayName,
                     photoURL: photoURL
@@ -122,14 +124,14 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
                 );
 
                 await Promise.race([authUpdatePromise, authTimeout]);
-                console.log("Auth profile updated");
+                console.log("[EditProfile] Auth profile updated");
             }
 
-            console.log("Update sequence complete. Closing modal.");
+            console.log("[EditProfile] Update sequence complete. Closing modal.");
             onUpdateComplete();
             onClose();
         } catch (error: any) {
-            console.error("Update failed detailed:", error);
+            console.error("[EditProfile] Update failed:", error);
 
             // Handle structured upload errors
             if (error && typeof error === 'object' && 'type' in error) {
@@ -143,6 +145,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ onClose, onU
             setAvatarUploadProgress(0);
             setBannerUploadProgress(0);
         } finally {
+            console.log("[EditProfile] Finally block - setting isSaving to false");
             setIsSaving(false);
         }
     };

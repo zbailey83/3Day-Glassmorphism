@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Course, Module, Lesson, QuizQuestion } from '../types';
-import { CheckCircle, PlayCircle, FileText, HelpCircle, ChevronRight, AlertCircle, ArrowLeft, ArrowRight, ChevronDown } from 'lucide-react';
+import { CheckCircle, PlayCircle, FileText, HelpCircle, ChevronRight, AlertCircle, ArrowRight, ChevronDown, Zap } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { updateModuleProgress } from '../services/firebase';
+import { updateModuleProgress, addXP } from '../services/firebase';
+import { COURSE_MASCOTS } from '../src/data/gamification';
 
 interface CourseViewProps {
   course: Course;
@@ -16,6 +17,9 @@ export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId 
   const [activeLesson, setActiveLesson] = useState<Lesson>(allLessons[0]);
   const [expandedModules, setExpandedModules] = useState<string[]>(course.modules.map(m => m.id));
   const [isChanging, setIsChanging] = useState(false);
+  const [xpEarned, setXpEarned] = useState<number | null>(null);
+
+  const mascot = COURSE_MASCOTS[course.id as keyof typeof COURSE_MASCOTS];
 
   useEffect(() => {
     if (initialModuleId) {
@@ -54,6 +58,12 @@ export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId 
           // We are tracking progress by Lesson ID now basically, but the backend function is named updateModuleProgress. 
           // Let's reuse it but pass lesson ID as the "moduleId" argument, assuming the backend just stores strings.
           updateModuleProgress(user.uid, course.id, lesson.id);
+
+          // Award XP for viewing a new lesson
+          const xpAmount = lesson.type === 'lab' ? 30 : lesson.type === 'video' ? 20 : 15;
+          addXP(user.uid, xpAmount);
+          setXpEarned(xpAmount);
+          setTimeout(() => setXpEarned(null), 2000);
         }
       }
     }, 200);
@@ -63,13 +73,31 @@ export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId 
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)] animate-slide-up">
+      {/* XP Earned Notification */}
+      {xpEarned && (
+        <div className="fixed top-24 right-8 z-50 animate-bounce">
+          <div className="bg-gradient-to-r from-[#F59E0B] to-[#EAB308] text-white px-4 py-2 rounded-full font-bold flex items-center gap-2 shadow-lg shadow-[#F59E0B]/30">
+            <Zap size={18} fill="currentColor" />
+            +{xpEarned} XP
+          </div>
+        </div>
+      )}
+
       {/* Content Area */}
       <div id="lesson-content-area" className="flex-1 glass-panel rounded-[24px] overflow-y-auto p-8 md:p-10 relative scroll-smooth flex flex-col">
         <div className={`max-w-3xl mx-auto w-full transition-opacity duration-200 ${isChanging ? 'opacity-0' : 'opacity-100'}`}>
-          <div className="flex items-center space-x-2 mb-6">
-            <span className="px-3 py-1 rounded-full bg-[#38BDF8]/10 border border-[#38BDF8]/20 text-[#38BDF8] text-xs font-bold uppercase tracking-wider">{course.title}</span>
-            <span className="text-slate-400 dark:text-slate-600">/</span>
-            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{currentModule?.title}</span>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-2">
+              <span className="px-3 py-1 rounded-full bg-[#38BDF8]/10 border border-[#38BDF8]/20 text-[#38BDF8] text-xs font-bold uppercase tracking-wider">{course.title}</span>
+              <span className="text-slate-400 dark:text-slate-600">/</span>
+              <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{currentModule?.title}</span>
+            </div>
+            {mascot && (
+              <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                <img src={mascot.svg} alt={mascot.name} className="w-6 h-6" />
+                <span className="text-xs text-slate-400">{mascot.name} says: "{mascot.catchphrase}"</span>
+              </div>
+            )}
           </div>
 
           <h1 className="text-3xl md:text-3xl font-display font-bold text-slate-900 dark:text-white mb-8 leading-tight">{activeLesson.title}</h1>
@@ -173,11 +201,21 @@ export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId 
   );
 };
 
-const QuizItem: React.FC<{ question: QuizQuestion; index: number }> = ({ question, index }) => {
+const QuizItem: React.FC<{ question: QuizQuestion; index: number; onCorrectAnswer?: () => void }> = ({ question, index, onCorrectAnswer }) => {
   const [selected, setSelected] = useState<number | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const { user } = useAuth();
 
   const isCorrect = selected === question.correctAnswer;
+
+  const handleSubmit = () => {
+    setIsSubmitted(true);
+    if (selected === question.correctAnswer && user) {
+      // Award XP for correct quiz answer
+      addXP(user.uid, 25);
+      onCorrectAnswer?.();
+    }
+  };
 
   return (
     <div className="mb-8 last:mb-0">
@@ -205,7 +243,7 @@ const QuizItem: React.FC<{ question: QuizQuestion; index: number }> = ({ questio
       </div>
       {!isSubmitted && selected !== null && (
         <button
-          onClick={() => setIsSubmitted(true)}
+          onClick={handleSubmit}
           className="mt-5 glass-button text-sm font-bold text-white px-8 py-3 rounded-full hover:scale-105 transition-all shadow-[0_0_20px_rgba(168,85,247,0.4)]"
         >
           Submit Answer
@@ -216,8 +254,15 @@ const QuizItem: React.FC<{ question: QuizQuestion; index: number }> = ({ questio
           <div className={`mr-3 mt-0.5 p-1 rounded-full ${isCorrect ? 'bg-[#10B981] text-white dark:text-[#020617]' : 'bg-red-500 text-white'}`}>
             {isCorrect ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
           </div>
-          <div>
-            <span className="font-bold block mb-1 text-base">{isCorrect ? 'Correct!' : 'Incorrect'}</span>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold block mb-1 text-base">{isCorrect ? 'Correct!' : 'Incorrect'}</span>
+              {isCorrect && (
+                <span className="flex items-center gap-1 text-[#F59E0B] text-sm font-bold">
+                  <Zap size={14} fill="currentColor" /> +25 XP
+                </span>
+              )}
+            </div>
             <p className="opacity-90 leading-relaxed">{question.explanation}</p>
           </div>
         </div>

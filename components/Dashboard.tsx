@@ -1,10 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Course } from '../types';
 import { ViewState } from '../App';
-import { PlayCircle, Clock, ArrowRight, Zap, Terminal, Layout, ShieldCheck, Code } from 'lucide-react';
+import { PlayCircle, Clock, ArrowRight, Zap, Terminal, Layout, ShieldCheck, Code, Trophy } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useAuth } from '../hooks/useAuth';
+import { getLevelFromXP, getXPProgress, ACHIEVEMENTS, COURSE_MASCOTS } from '../src/data/gamification';
+import { AchievementsPanel } from './AchievementsPanel';
 
 interface DashboardProps {
   courses: Course[];
@@ -20,9 +23,19 @@ const skillData = [
 
 export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => {
   const { user, userProfile } = useAuth();
+  const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
+
+  const xp = userProfile?.xp || 0;
+  const currentLevel = getLevelFromXP(xp);
+  const xpProgress = getXPProgress(xp);
 
   return (
     <div className="space-y-8 md:space-y-10 pb-10">
+      {/* Achievements Panel - Rendered via Portal */}
+      {isAchievementsOpen && createPortal(
+        <AchievementsPanel isOpen={isAchievementsOpen} onClose={() => setIsAchievementsOpen(false)} />,
+        document.body
+      )}
 
       {/* Header & Greeting */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 animate-slide-up">
@@ -31,19 +44,40 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
           <p className="text-slate-600 dark:text-[#CBD5F5] text-lg font-light">Your architectural fidelity is peaking at 2026 standards.</p>
         </div>
 
-        {/* Vibe Streak Card (Moved from Sidebar) */}
-        <div className="bg-gradient-to-br from-indigo-500/10 to-blue-500/10 dark:from-white/5 dark:to-white/0 rounded-2xl border border-slate-200 dark:border-white/5 backdrop-blur-md p-5 min-w-[280px]">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-display font-bold text-slate-900 dark:text-white text-sm">Vibe Streak</h3>
-            <span className="text-[10px] font-bold text-indigo-600 dark:text-[#818CF8] bg-indigo-100 dark:bg-indigo-500/10 px-2 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/20">⚡ {userProfile?.streakDays || 1} Days</span>
+        {/* Level & Streak Card with Animal Mascot */}
+        <div
+          onClick={() => setIsAchievementsOpen(true)}
+          className="bg-gradient-to-br from-indigo-500/10 to-blue-500/10 dark:from-white/5 dark:to-white/0 rounded-2xl border border-slate-200 dark:border-white/5 backdrop-blur-md p-5 min-w-[280px] cursor-pointer hover:border-[#F59E0B]/30 transition-all group"
+        >
+          <div className="flex items-center gap-4 mb-3">
+            <div className="relative">
+              <img
+                src={currentLevel.animalSvg}
+                alt={currentLevel.animal}
+                className="w-16 h-16 object-contain group-hover:scale-110 transition-transform"
+              />
+              <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-[#38BDF8] to-[#6366F1] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg">
+                Lv.{currentLevel.level}
+              </div>
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <h3 className="font-display font-bold text-slate-900 dark:text-white">{currentLevel.title}</h3>
+                <Trophy size={18} className="text-[#F59E0B] opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-[#94A3B8]">{xp} XP • ⚡ {userProfile?.streakDays || 1} day streak</p>
+            </div>
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-[#94A3B8] mb-3">Level {userProfile?.level || 1} • {userProfile?.xp || 0} XP</p>
-          <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
+          <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-2 overflow-hidden">
             <div
-              className="bg-gradient-to-r from-[#38BDF8] to-[#6366F1] h-full rounded-full shadow-[0_0_8px_rgba(56,189,248,0.6)]"
-              style={{ width: `${Math.min(((userProfile?.xp || 0) % 1000) / 10, 100)}%` }}
+              className="bg-gradient-to-r from-[#38BDF8] to-[#6366F1] h-full rounded-full shadow-[0_0_8px_rgba(56,189,248,0.6)] transition-all duration-500"
+              style={{ width: `${xpProgress.percentage}%` }}
             ></div>
           </div>
+          <p className="text-[10px] text-slate-400 mt-2 flex items-center justify-between">
+            <span>Click to view achievements</span>
+            <span>{Math.round(xpProgress.percentage)}% to next level</span>
+          </p>
         </div>
       </div>
 
@@ -51,35 +85,53 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
       <div className="animate-slide-up delay-100">
         <h2 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-6">Active Tracks</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-          {courses.map(course => (
-            <div key={course.id} className="group glass-panel rounded-[24px] overflow-hidden hover:border-indigo-400/40 hover:-translate-y-1 transition-all duration-300">
-              <div className="h-48 overflow-hidden relative">
-                <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 dark:opacity-80 group-hover:opacity-100" />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent dark:from-[#0F172A] dark:to-transparent opacity-90" />
-                <div className="absolute bottom-4 left-4 flex gap-2">
-                  {course.tags.map(tag => (
-                    <span key={tag} className="text-[10px] uppercase font-bold px-3 py-1 bg-white/10 backdrop-blur-md text-white dark:text-[#E2E8F0] rounded-full border border-white/10 shadow-sm">{tag}</span>
-                  ))}
+          {courses.map(course => {
+            const mascot = COURSE_MASCOTS[course.id as keyof typeof COURSE_MASCOTS];
+            return (
+              <div key={course.id} className="group glass-panel rounded-[24px] overflow-hidden hover:border-indigo-400/40 hover:-translate-y-1 transition-all duration-300">
+                <div className="h-48 overflow-hidden relative">
+                  <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 dark:opacity-80 group-hover:opacity-100" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent dark:from-[#0F172A] dark:to-transparent opacity-90" />
+
+                  {/* Course Mascot */}
+                  {mascot && (
+                    <div className="absolute top-4 right-4 w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl p-2 border border-white/20 group-hover:scale-110 transition-transform">
+                      <img src={mascot.svg} alt={mascot.name} className="w-full h-full object-contain" />
+                    </div>
+                  )}
+
+                  <div className="absolute bottom-4 left-4 flex gap-2">
+                    {course.tags.map(tag => (
+                      <span key={tag} className="text-[10px] uppercase font-bold px-3 py-1 bg-white/10 backdrop-blur-md text-white dark:text-[#E2E8F0] rounded-full border border-white/10 shadow-sm">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="p-7">
+                  <div className="flex items-start justify-between mb-1">
+                    <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white leading-tight group-hover:text-indigo-500 transition-colors">{course.title}</h3>
+                    {mascot && (
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-2 py-1 rounded-full">
+                        🐾 {mascot.name}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-indigo-500 dark:text-indigo-400 font-bold uppercase tracking-wider mb-4">{course.subtitle}</p>
+                  <p className="text-slate-500 dark:text-[#94A3B8] text-sm mb-6 leading-relaxed line-clamp-2 font-light">{course.description}</p>
+                  <div className="flex items-center justify-between pt-5 border-t border-slate-200 dark:border-white/5">
+                    <span className="text-xs text-slate-500 dark:text-[#64748B] font-semibold flex items-center">
+                      <PlayCircle size={14} className="mr-1" /> {course.modules.length} Sessions
+                    </span>
+                    <button
+                      onClick={() => onNavigate({ type: 'course', courseId: course.id })}
+                      className="flex items-center text-white bg-indigo-600 dark:bg-white/5 border border-transparent dark:border-white/10 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all"
+                    >
+                      Sync Session <ArrowRight size={16} className="ml-2" />
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="p-7">
-                <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white mb-1 leading-tight group-hover:text-indigo-500 transition-colors">{course.title}</h3>
-                <p className="text-xs text-indigo-500 dark:text-indigo-400 font-bold uppercase tracking-wider mb-4">{course.subtitle}</p>
-                <p className="text-slate-500 dark:text-[#94A3B8] text-sm mb-6 leading-relaxed line-clamp-2 font-light">{course.description}</p>
-                <div className="flex items-center justify-between pt-5 border-t border-slate-200 dark:border-white/5">
-                  <span className="text-xs text-slate-500 dark:text-[#64748B] font-semibold flex items-center">
-                    <PlayCircle size={14} className="mr-1" /> {course.modules.length} Sessions
-                  </span>
-                  <button
-                    onClick={() => onNavigate({ type: 'course', courseId: course.id })}
-                    className="flex items-center text-white bg-indigo-600 dark:bg-white/5 border border-transparent dark:border-white/10 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all"
-                  >
-                    Sync Session <ArrowRight size={16} className="ml-2" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 

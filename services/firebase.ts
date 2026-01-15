@@ -97,31 +97,47 @@ const createUploadError = (type: UploadErrorType, message: string, actionableSte
 
 export const uploadFile = async (file: File, path: string, onProgress?: (progress: number) => void) => {
     return new Promise<string>((resolve, reject) => {
-        console.log(`Starting upload to ${path} (${file.size} bytes)...`);
+        console.log(`[Upload] Starting upload to ${path} (${file.size} bytes)...`);
         const storageRef = ref(storage, path);
 
         // Use resumable upload for better state tracking
         const uploadTask = uploadBytesResumable(storageRef, file);
         let uploadStarted = false;
+        let isResolved = false;
+
+        // Helper to safely resolve/reject only once
+        const safeResolve = (url: string) => {
+            if (!isResolved) {
+                isResolved = true;
+                clearTimeout(timeoutId);
+                resolve(url);
+            }
+        };
+
+        const safeReject = (error: UploadError) => {
+            if (!isResolved) {
+                isResolved = true;
+                clearTimeout(timeoutId);
+                reject(error);
+            }
+        };
 
         // Timeout watchdog
         const timeoutId = setTimeout(() => {
+            console.error("[Upload] Timeout triggered. Started:", uploadStarted);
             uploadTask.cancel();
-            console.error("Upload timeout. Started:", uploadStarted);
             if (!uploadStarted) {
-                const corsError = createUploadError(
+                safeReject(createUploadError(
                     UploadErrorType.CORS,
                     "Upload failed to start. This is likely a CORS issue.",
                     "Please configure CORS on Firebase Storage by running: gsutil cors set cors.json gs://<your-bucket>. See SETUP.md for detailed instructions."
-                );
-                reject(corsError);
+                ));
             } else {
-                const timeoutError = createUploadError(
+                safeReject(createUploadError(
                     UploadErrorType.TIMEOUT,
                     "Upload timed out after 60 seconds.",
                     "Please try uploading a smaller file or check your internet connection and try again."
-                );
-                reject(timeoutError);
+                ));
             }
         }, 60000); // 60s
 
@@ -129,7 +145,7 @@ export const uploadFile = async (file: File, path: string, onProgress?: (progres
             (snapshot) => {
                 uploadStarted = true;
                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                console.log(`Upload is ${progress}% done`);
+                console.log(`[Upload] Progress: ${progress.toFixed(1)}%`);
 
                 // Call progress callback if provided
                 if (onProgress) {
@@ -137,8 +153,7 @@ export const uploadFile = async (file: File, path: string, onProgress?: (progres
                 }
             },
             (error) => {
-                clearTimeout(timeoutId);
-                console.error("Upload error specific:", error.code, error.message);
+                console.error("[Upload] Error:", error.code, error.message);
 
                 // Categorize the error
                 let uploadError: UploadError;
@@ -173,22 +188,28 @@ export const uploadFile = async (file: File, path: string, onProgress?: (progres
                     );
                 }
 
-                reject(uploadError);
+                safeReject(uploadError);
             },
             async () => {
-                clearTimeout(timeoutId);
+                console.log("[Upload] Upload complete, getting download URL...");
                 try {
-                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                    console.log("File available at", downloadURL);
-                    resolve(downloadURL);
-                } catch (e) {
-                    const downloadError = createUploadError(
+                    // Add timeout for getDownloadURL
+                    const downloadURLPromise = getDownloadURL(uploadTask.snapshot.ref);
+                    const urlTimeout = new Promise<never>((_, rej) =>
+                        setTimeout(() => rej(new Error('getDownloadURL timed out after 15 seconds')), 15000)
+                    );
+
+                    const downloadURL = await Promise.race([downloadURLPromise, urlTimeout]);
+                    console.log("[Upload] File available at", downloadURL);
+                    safeResolve(downloadURL);
+                } catch (e: any) {
+                    console.error("[Upload] Failed to get download URL:", e);
+                    safeReject(createUploadError(
                         UploadErrorType.UNKNOWN,
-                        "Upload completed but failed to get download URL.",
+                        `Upload completed but failed to get download URL: ${e.message || e}`,
                         "Please try again or contact support.",
                         e
-                    );
-                    reject(downloadError);
+                    ));
                 }
             }
         );

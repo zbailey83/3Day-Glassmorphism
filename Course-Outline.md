@@ -6,7 +6,7 @@ Goal: Shift the student's mindset from "syntax memorization" to "AI orchestratio
 
 ### Module 1: The Vibe Shift
 *   **Lesson 1.1: Welcome to Vibe Dev 2026 (Philosophy & Expectations)**
-*   **Lesson 1.2: The Tech Stack (Setting up Cursor, VS Code, Replit, & Python basics)**
+*   **Lesson 1.2: The Tech Stack (Setting up Google AI Studio 'Build' section and basic usage)**
 *   **Lesson 1.3: "Hello World" in the AI Era (Writing your first script without writing code)**
 
 ### Module 2: Prompting for Code
@@ -19,8 +19,8 @@ Goal: Shift the student's mindset from "syntax memorization" to "AI orchestratio
 Goal: Move beyond static pages. Build real applications with user accounts and memory (databases).
 
 ### Module 1: Authentication (The Front Door)
-*   **Lesson 1.1: Understanding Auth Flows (Sign up, Login, Reset Password)**
-*   **Lesson 1.2: Implementing Authentication (Supabase/Firebase integration via AI)**
+*   **Lesson 1.1: The Tech Stack (Setting up Claude Code / Cursor AI IDE and basic intro + basic usage)**
+*   **Lesson 1.2: Understanding Auth Flows (Sign up, Login, Reset Password) & Implementing Authentication (Supabase/Firebase integration via AI)**
 *   **Lesson 1.3: Protected Routes (Keeping pages private)**
 
 ### Module 2: The Database (The Memory)

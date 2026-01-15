@@ -1,101 +1,11 @@
-
 import { Course } from './types';
+import { COURSE_1_VIBE_CODING_101 } from './src/data/course1';
 
 export const GEMINI_TEXT_MODEL = 'gemini-3-pro-preview';
 export const GEMINI_IMAGE_MODEL = 'gemini-2.5-flash-image';
 
 export const COURSES: Course[] = [
-  {
-    id: 'course-1-vibe-coding-101',
-    title: 'Course 1: Vibe Coding 101',
-    subtitle: 'Shift from Syntax to AI Orchestration',
-    description: 'Get your development environment set up and ship your first simple web app by shifting your mindset from syntax memorization to AI orchestration.',
-    tags: ['Beginner', 'Setup', 'Prompting'],
-    thumbnail: 'https://images.unsplash.com/photo-1664575602276-acd073f104c1?q=80&w=800&auto=format&fit=crop',
-    modules: [
-      {
-        id: 'c1-m1',
-        title: 'Module 1: The Vibe Shift',
-        lessons: [
-          {
-            id: 'c1-m1-l1',
-            title: '1.1 Welcome to Vibe Dev 2026',
-            duration: '10 min',
-            type: 'video',
-            content: `### Philosophy & Expectations
-            
-Welcome to the future of coding. In this module, we explore why "learning syntax" is no longer the barrier to entry. We focus on:
-
-- **AI Orchestration**: Managing tools like Cursor and Replit.
-- **The New Workflow**: Prompt -> Code -> Iterate.
-            `
-          },
-          {
-            id: 'c1-m1-l2',
-            title: '1.2 The Tech Stack',
-            duration: '20 min',
-            type: 'video',
-            content: `### Setting up your Environment
-            
-We will be setting up the core tools for Vibe Coding:
-1. **Cursor**: The AI-first code editor.
-2. **VS Code**: The classic standard (as fallback).
-3. **Replit**: For quick cloud deployments.
-4. **Python Basics**: Just enough to understand the scripts AI generates for you.
-            `
-          },
-          {
-            id: 'c1-m1-l3',
-            title: '1.3 "Hello World" in the AI Era',
-            duration: '15 min',
-            type: 'lab',
-            content: `### Writing specific scripts without code
-            
-Your task: Use Cursor to generate a Python script that prints "Hello, Vibe Dev!" and calculates the Fibonacci sequence. Do not write a single line yourself.
-            `
-          }
-        ]
-      },
-      {
-        id: 'c1-m2',
-        title: 'Module 2: Prompting for Code',
-        lessons: [
-          {
-            id: 'c1-m2-l1',
-            title: '2.1 Talking to the Machine',
-            duration: '25 min',
-            type: 'reading',
-            content: `### Basic Prompt Engineering
-            
-Learn the difference between "Write a website" and "Create a responsive landing page with a hero section using Tailwind CSS." 
-Precision is key.
-            `
-          },
-          {
-            id: 'c1-m2-l2',
-            title: '2.2 Iteration Speed',
-            duration: '20 min',
-            type: 'lab',
-            content: `### Debugging with AI
-            
-Errors are part of the process. Learn how to paste error logs into the AI context to get instant fixes.
-            `
-          },
-          {
-            id: 'c1-m2-l3',
-            title: '2.3 Deploying Your First Static Site',
-            duration: '30 min',
-            type: 'lab',
-            content: `### Action Item: Deploy a Link-in-Bio Page
-            
-**Goal**: Deploy a personal "Link-in-Bio" landing page using only AI prompts.
-**Tools**: HTML/CSS (generated), Netlify or Vercel (drag and drop).
-            `
-          }
-        ]
-      }
-    ]
-  },
+  COURSE_1_VIBE_CODING_101,
   {
     id: 'course-2-full-stack',
     title: 'Course 2: Full Stack Vibe Coding',
@@ -113,34 +23,21 @@ Errors are part of the process. Learn how to paste error logs into the AI contex
             title: '1.1 Understanding Auth Flows',
             duration: '20 min',
             type: 'video',
-            content: `### Sign up, Login, Reset
-            
-Understanding the security flow:
-- JWTs (JSON Web Tokens)
-- OAuth (Google/GitHub Login)
-- Session Management
-            `
+            content: `### Sign up, Login, Reset\n\nUnderstanding the security flow:\n- JWTs (JSON Web Tokens)\n- OAuth (Google/GitHub Login)\n- Session Management`
           },
           {
             id: 'c2-m1-l2',
             title: '1.2 Implementing Authentication',
             duration: '45 min',
             type: 'lab',
-            content: `### Supabase/Firebase Integration
-            
-We will use AI to generate the boilerplate code for Firebase Authentication.
-**Task**: Connect your "Hello World" app to Firebase.
-            `
+            content: `### Supabase/Firebase Integration\n\nWe will use AI to generate the boilerplate code for Firebase Authentication.\n**Task**: Connect your app to Firebase.`
           },
           {
             id: 'c2-m1-l3',
             title: '1.3 Protected Routes',
             duration: '30 min',
             type: 'lab',
-            content: `### Keeping Pages Private
-            
-Learn how to redirect unauthenticated users away from the Dashboard.
-            `
+            content: `### Keeping Pages Private\n\nLearn how to redirect unauthenticated users away from the Dashboard.`
           }
         ]
       },
@@ -153,30 +50,21 @@ Learn how to redirect unauthenticated users away from the Dashboard.
             title: '2.1 Database Schemas Explained',
             duration: '25 min',
             type: 'reading',
-            content: `### Data Modeling with AI
-            
-Ask the AI: "Design a Firestore schema for a To-Do app." specialized for NoSQL structure.
-            `
+            content: `### Data Modeling with AI\n\nAsk the AI: "Design a Firestore schema for a To-Do app."`
           },
           {
             id: 'c2-m2-l2',
             title: '2.2 CRUD Operations',
             duration: '40 min',
             type: 'lab',
-            content: `### Create, Read, Update, Delete
-            
-The core of every app. We will build functions to add items to the database and display them.
-            `
+            content: `### Create, Read, Update, Delete\n\nThe core of every app. Build functions to add items to the database and display them.`
           },
           {
             id: 'c2-m2-l3',
             title: '2.3 Connecting User Profiles',
             duration: '60 min',
             type: 'lab',
-            content: `### Action Item: Micro-SaaS MVP
-            
-**Goal**: Build a simple To-Do list or Journal app where users can log in and save unique data.
-            `
+            content: `### Action Item: Micro-SaaS MVP\n\n**Goal**: Build a simple To-Do list or Journal app where users can log in and save unique data.`
           }
         ]
       }
@@ -194,57 +82,18 @@ The core of every app. We will build functions to add items to the database and 
         id: 'c3-m1',
         title: 'Module 1: The Context Engineer',
         lessons: [
-          {
-            id: 'c3-m1-l1',
-            title: '1.1 What is Context Engineering?',
-            duration: '20 min',
-            type: 'reading',
-            content: 'Beyond simple prompt engineering. How to structure massive context for the AI.'
-          },
-          {
-            id: 'c3-m1-l2',
-            title: '1.2 Managing Token Limits',
-            duration: '25 min',
-            type: 'video',
-            content: 'Understanding how much memory your AI has and how to optimize it.'
-          },
-          {
-            id: 'c3-m1-l3',
-            title: '1.3 System Prompts vs User Prompts',
-            duration: '30 min',
-            type: 'lab',
-            content: 'Crafting the "God Mode" system instructions that define how your agent behaves.'
-          }
+          { id: 'c3-m1-l1', title: '1.1 What is Context Engineering?', duration: '20 min', type: 'reading', content: 'Beyond simple prompt engineering. How to structure massive context for the AI.' },
+          { id: 'c3-m1-l2', title: '1.2 Managing Token Limits', duration: '25 min', type: 'video', content: 'Understanding how much memory your AI has and how to optimize it.' },
+          { id: 'c3-m1-l3', title: '1.3 System Prompts vs User Prompts', duration: '30 min', type: 'lab', content: 'Crafting the "God Mode" system instructions that define how your agent behaves.' }
         ]
       },
       {
         id: 'c3-m2',
         title: 'Module 2: Building Agents & Swarms',
         lessons: [
-          {
-            id: 'c3-m2-l1',
-            title: '2.1 Structuring Complex Logic',
-            duration: '35 min',
-            type: 'reading',
-            content: 'Chain-of-Thought prompting and multi-step reasoning.'
-          },
-          {
-            id: 'c3-m2-l2',
-            title: '2.2 Feeding Data (RAG)',
-            duration: '45 min',
-            type: 'lab',
-            content: 'Retrieval Augmented Generation: Giving your AI access to external documentation.'
-          },
-          {
-            id: 'c3-m2-l3',
-            title: '2.3 Creating an Agent Swarm',
-            duration: '90 min',
-            type: 'lab',
-            content: `### Action Item: Specialized AI Assistant
-            
-**Goal**: Build a "Research Agent" or "Coding Buddy" that follows a strict system persona and has access to specific docs.
-            `
-          }
+          { id: 'c3-m2-l1', title: '2.1 Structuring Complex Logic', duration: '35 min', type: 'reading', content: 'Chain-of-Thought prompting and multi-step reasoning.' },
+          { id: 'c3-m2-l2', title: '2.2 Feeding Data (RAG)', duration: '45 min', type: 'lab', content: 'Retrieval Augmented Generation: Giving your AI access to external documentation.' },
+          { id: 'c3-m2-l3', title: '2.3 Creating an Agent Swarm', duration: '90 min', type: 'lab', content: '### Action Item: Specialized AI Assistant\n\n**Goal**: Build a "Research Agent" or "Coding Buddy" that follows a strict system persona.' }
         ]
       }
     ]
