@@ -3,11 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Course } from '../types';
 import { ViewState } from '../App';
-import { PlayCircle, Clock, ArrowRight, Zap, Terminal, Layout, Code, Trophy } from 'lucide-react';
+import { PlayCircle, Clock, ArrowRight, Zap, Terminal, Layout, Code, Trophy, CheckCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { getLevelFromXP, getXPProgress, ACHIEVEMENTS, COURSE_MASCOTS } from '../src/data/gamification';
+import { COURSE_MASCOTS } from '../src/data/gamification';
 import { AchievementsPanel } from './AchievementsPanel';
 import { getRecentToolUsage } from '../services/firebase';
+import { useGamification } from '../contexts/GamificationContext';
 
 interface DashboardProps {
   courses: Course[];
@@ -24,13 +25,10 @@ interface ToolUsageRecord {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => {
-  const { user, userProfile } = useAuth();
+  const { user } = useAuth();
+  const { xp, levelInfo, xpProgress, streak, dailyChallenges, completeDailyChallenge } = useGamification();
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
   const [recentToolUsage, setRecentToolUsage] = useState<ToolUsageRecord[]>([]);
-
-  const xp = userProfile?.xp || 0;
-  const currentLevel = getLevelFromXP(xp);
-  const xpProgress = getXPProgress(xp);
 
   // Fetch recent tool usage
   useEffect(() => {
@@ -169,20 +167,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
           <div className="flex items-center gap-4 mb-3">
             <div className="relative">
               <img
-                src={currentLevel.animalSvg}
-                alt={currentLevel.animal}
+                src={levelInfo.animalSvg}
+                alt={levelInfo.animal}
                 className="w-16 h-16 object-contain group-hover:scale-110 transition-transform"
               />
               <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-[#38BDF8] to-[#6366F1] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg">
-                Lv.{currentLevel.level}
+                Lv.{levelInfo.level}
               </div>
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between">
-                <h3 className="font-display font-bold text-slate-900 dark:text-white">{currentLevel.title}</h3>
+                <h3 className="font-display font-bold text-slate-900 dark:text-white">{levelInfo.title}</h3>
                 <Trophy size={18} className="text-[#F59E0B] opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-[#94A3B8]">{xp} XP • ⚡ {userProfile?.streakDays || 1} day streak</p>
+              <p className="text-[11px] text-slate-500 dark:text-[#94A3B8]">{xp} XP • ⚡ {streak || 1} day streak</p>
             </div>
           </div>
           <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-2 overflow-hidden">
@@ -251,6 +249,45 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
           })}
         </div>
       </div>
+
+      {/* Daily Challenges Section */}
+      {dailyChallenges.length > 0 && (
+        <div className="animate-slide-up delay-150">
+          <h2 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+            <Zap size={24} className="text-[#F59E0B]" />
+            Daily Challenges
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {dailyChallenges.map(challenge => (
+              <button
+                key={challenge.id}
+                onClick={() => !challenge.completed && completeDailyChallenge(challenge.id)}
+                disabled={challenge.completed}
+                className={`glass-panel p-6 rounded-[20px] text-left transition-all ${challenge.completed
+                  ? 'opacity-60 cursor-not-allowed'
+                  : 'hover:bg-slate-50 dark:hover:bg-white/10 hover:border-[#10B981]/40 hover:-translate-y-1 cursor-pointer'
+                  }`}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <img src={challenge.icon} alt="" className="w-12 h-12" />
+                  {challenge.completed ? (
+                    <div className="flex items-center gap-1 text-[#10B981] text-sm font-bold bg-[#10B981]/10 px-3 py-1 rounded-full">
+                      <CheckCircle size={14} />
+                      Done
+                    </div>
+                  ) : (
+                    <div className="text-xs font-bold text-[#F59E0B] bg-[#F59E0B]/10 px-3 py-1 rounded-full">
+                      +{challenge.xpReward} XP
+                    </div>
+                  )}
+                </div>
+                <h3 className="font-bold text-slate-900 dark:text-white mb-2">{challenge.title}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{challenge.description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recent Tool Usage Shortcuts */}
       {recentUsageWithinWeek.length > 0 && (
@@ -345,15 +382,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ courses, onNavigate }) => 
             <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-indigo-500/20 transition-colors duration-700"></div>
 
             <h3 className="text-slate-600 dark:text-[#CBD5F5] font-medium mb-2 flex items-center relative z-10 uppercase tracking-widest text-[11px]"><Zap className="w-4 h-4 mr-2 text-indigo-500" /> Operational Mastery</h3>
-            <div className="text-5xl font-display font-bold mb-6 relative z-10 text-slate-900 dark:text-white">Lvl {userProfile?.level || 1}</div>
+            <div className="text-5xl font-display font-bold mb-6 relative z-10 text-slate-900 dark:text-white">Lvl {levelInfo.level}</div>
 
             <div className="w-full bg-black/5 dark:bg-black/20 rounded-full h-3 mb-3 backdrop-blur-sm relative z-10 border border-black/5 dark:border-white/5">
               <div
                 className="bg-gradient-to-r from-[#38BDF8] to-[#6366F1] h-3 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.6)]"
-                style={{ width: `${Math.min(((userProfile?.xp || 0) % 1000) / 10, 100)}%` }}
+                style={{ width: `${Math.min(((xp || 0) % 1000) / 10, 100)}%` }}
               ></div>
             </div>
-            <p className="text-sm text-slate-500 dark:text-[#E2E8F0] font-medium relative z-10">Rank: {userProfile?.role || 'Principal Vibe Director'}</p>
+            <p className="text-sm text-slate-500 dark:text-[#E2E8F0] font-medium relative z-10">Rank: Principal Vibe Director</p>
           </div>
 
           <div className="glass-panel p-6 rounded-[24px] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">

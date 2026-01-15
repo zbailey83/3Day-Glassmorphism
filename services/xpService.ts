@@ -2,6 +2,7 @@ import { db } from './firebase';
 import { doc, updateDoc, increment, addDoc, collection, getDoc, serverTimestamp } from 'firebase/firestore';
 import { XPTransaction, UserProfile } from '../types';
 import { getLevelFromXP, Achievement } from '../src/data/gamification';
+import { validateUserId, validateXPAmount, validateReason } from './validation';
 
 // XP reward constants
 export const XP_REWARDS = {
@@ -107,50 +108,57 @@ export async function awardXP(
         projectId?: string;
     }
 ): Promise<void> {
-    // Validate amount
-    if (amount <= 0 || !Number.isInteger(amount)) {
-        console.error('Invalid XP amount:', amount);
-        throw new Error(`Invalid XP amount: ${amount}. Must be a positive integer.`);
-    }
+    // Validate inputs using centralized validation
+    validateUserId(userId);
+    validateXPAmount(amount);
+    validateReason(reason);
 
-    // Create transaction record
-    const transaction: Omit<XPTransaction, 'timestamp'> & { timestamp: any } = {
-        userId,
-        amount,
-        reason,
-        timestamp: serverTimestamp(),
-        metadata
-    };
+    try {
+        // Create transaction record
+        const transaction: Omit<XPTransaction, 'timestamp'> & { timestamp: any } = {
+            userId,
+            amount,
+            reason,
+            timestamp: serverTimestamp(),
+            metadata
+        };
 
-    // Update user XP with retry logic
-    await retryOperation(async () => {
-        const userRef = doc(db, 'users', userId);
+        // Update user XP with retry logic
+        await retryOperation(async () => {
+            const userRef = doc(db, 'users', userId);
 
-        // Update XP
-        await updateDoc(userRef, {
-            xp: increment(amount)
-        });
-
-        // Log transaction
-        await addDoc(collection(db, 'xpTransactions'), transaction);
-
-        console.log(`Awarded ${amount} XP to user ${userId} for: ${reason}`);
-    }, 3);
-
-    // Check for level up
-    const userRef = doc(db, 'users', userId);
-    const userSnap = await getDoc(userRef);
-
-    if (userSnap.exists()) {
-        const userProfile = userSnap.data() as UserProfile;
-        const newLevel = getLevelFromXP(userProfile.xp);
-
-        if (newLevel.level > userProfile.level) {
+            // Update XP
             await updateDoc(userRef, {
-                level: newLevel.level
+                xp: increment(amount)
             });
-            console.log(`User ${userId} leveled up to level ${newLevel.level}: ${newLevel.title}`);
+
+            // Log transaction
+            await addDoc(collection(db, 'xpTransactions'), transaction);
+
+            console.log(`Awarded ${amount} XP to user ${userId} for: ${reason}`);
+        }, 3);
+
+        // Check for level up
+        const userRef = doc(db, 'users', userId);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+            const userProfile = userSnap.data() as UserProfile;
+            const newLevel = getLevelFromXP(userProfile.xp);
+
+            if (newLevel.level > userProfile.level) {
+                await updateDoc(userRef, {
+                    level: newLevel.level
+                });
+                console.log(`User ${userId} leveled up to level ${newLevel.level}: ${newLevel.title}`);
+            }
+        } else {
+            console.warn(`User profile not found after XP award: ${userId}`);
         }
+    } catch (error) {
+        console.error(`Failed to award XP (userId: ${userId}, amount: ${amount}, reason: ${reason}):`, error);
+        handleGamificationError(error as Error, 'awardXP');
+        throw error;
     }
 }
 
@@ -160,6 +168,14 @@ export async function awardXP(
  * @param projectId - Project ID that was uploaded
  */
 export async function uploadProject(userId: string, projectId: string): Promise<void> {
+    // Validate inputs
+    validateUserId(userId);
+
+    if (!projectId || typeof projectId !== 'string' || projectId.trim() === '') {
+        console.error('Invalid project ID in uploadProject:', projectId);
+        return; // Don't throw - social XP shouldn't break the upload flow
+    }
+
     try {
         // Award XP for project upload
         await awardXP(
@@ -188,7 +204,8 @@ export async function uploadProject(userId: string, projectId: string): Promise<
             });
         }
     } catch (error) {
-        console.error(`Error awarding XP for project upload:`, error);
+        console.error(`Error awarding XP for project upload (userId: ${userId}, projectId: ${projectId}):`, error);
+        handleGamificationError(error as Error, 'uploadProject');
         // Don't throw - social XP shouldn't break the upload flow
     }
 }
@@ -199,6 +216,14 @@ export async function uploadProject(userId: string, projectId: string): Promise<
  * @param projectId - Project ID that received the like
  */
 export async function receiveProjectLike(userId: string, projectId: string): Promise<void> {
+    // Validate inputs
+    validateUserId(userId);
+
+    if (!projectId || typeof projectId !== 'string' || projectId.trim() === '') {
+        console.error('Invalid project ID in receiveProjectLike:', projectId);
+        return; // Don't throw - social XP shouldn't break the like flow
+    }
+
     try {
         // Award XP for receiving a like
         await awardXP(
@@ -227,7 +252,39 @@ export async function receiveProjectLike(userId: string, projectId: string): Pro
             });
         }
     } catch (error) {
-        console.error(`Error awarding XP for project like:`, error);
+        console.error(`Error awarding XP for project like (userId: ${userId}, projectId: ${projectId}):`, error);
+        handleGamificationError(error as Error, 'receiveProjectLike');
         // Don't throw - social XP shouldn't break the like flow
+    }
+}
+
+/**
+ * Handle gamification errors with logging and user-friendly messages
+ * @param error - Error object
+ * @param context - Context where the error occurred
+ */
+function handleGamificationError(error: Error, context: string): void {
+    console.error(`Gamification error in ${context}:`, {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+    });
+
+    // In a production environment, you would log to an error tracking service
+    // Example: Sentry.captureException(error, { tags: { context } });
+
+    // Show user-friendly notification (if notification service is available)
+    try {
+        const { showNotification } = require('./notificationService');
+        if (showNotification) {
+            showNotification({
+                type: 'error',
+                message: 'Something went wrong with your progress. Please try again.',
+                duration: 5000
+            });
+        }
+    } catch (notificationError) {
+        // Silently fail if notification service is not available
+        console.warn('Could not show error notification:', notificationError);
     }
 }

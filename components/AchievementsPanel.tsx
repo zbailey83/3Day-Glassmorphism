@@ -5,14 +5,11 @@ import {
     TROPHIES,
     LEVELS,
     ACHIEVEMENT_TIERS,
-    getLevelFromXP,
-    getXPProgress,
-    getNextLevel,
     DAILY_CHALLENGES,
     type Achievement,
     type AchievementTier
 } from '../src/data/gamification';
-import { useAuth } from '../hooks/useAuth';
+import { useGamification } from '../contexts/GamificationContext';
 
 interface AchievementsPanelProps {
     isOpen: boolean;
@@ -20,16 +17,11 @@ interface AchievementsPanelProps {
 }
 
 export const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ isOpen, onClose }) => {
-    const { userProfile } = useAuth();
+    const { xp, levelInfo, xpProgress, unlockedAchievements } = useGamification();
     const [activeTab, setActiveTab] = useState<'achievements' | 'trophies' | 'levels'>('achievements');
 
-    const xp = userProfile?.xp || 0;
-    const currentLevel = getLevelFromXP(xp);
-    const xpProgress = getXPProgress(xp);
-    const nextLevel = getNextLevel(xp);
-
-    // Mock unlocked achievements - in real app, this comes from userProfile
-    const unlockedAchievements = userProfile?.likedProjects?.slice(0, 3) || [];
+    // Calculate next level info
+    const nextLevel = LEVELS.find(l => l.level === levelInfo.level + 1);
 
     if (!isOpen) return null;
 
@@ -53,16 +45,16 @@ export const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ isOpen, on
                     <div className="flex items-center gap-6 p-4 rounded-2xl bg-white/50 dark:bg-white/5 border border-white/20">
                         <div className="relative">
                             <img
-                                src={currentLevel.animalSvg}
-                                alt={currentLevel.animal}
+                                src={levelInfo.animalSvg}
+                                alt={levelInfo.animal}
                                 className="w-20 h-20 object-contain drop-shadow-lg"
                             />
                             <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-[#38BDF8] to-[#6366F1] text-white text-xs font-bold px-2 py-1 rounded-full">
-                                Lv.{currentLevel.level}
+                                Lv.{levelInfo.level}
                             </div>
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">{currentLevel.title}</h3>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">{levelInfo.title}</h3>
                             <div className="flex items-center gap-2 mt-2">
                                 <div className="flex-1 h-3 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
                                     <div
@@ -94,8 +86,8 @@ export const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ isOpen, on
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
                             className={`flex items-center gap-2 px-6 py-4 font-bold text-sm transition-all border-b-2 -mb-[2px] ${activeTab === tab.id
-                                    ? 'border-[#38BDF8] text-[#38BDF8]'
-                                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                ? 'border-[#38BDF8] text-[#38BDF8]'
+                                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                                 }`}
                         >
                             <tab.icon size={18} />
@@ -153,8 +145,8 @@ const AchievementCard: React.FC<{ achievement: Achievement; isUnlocked: boolean 
     return (
         <div
             className={`relative p-4 rounded-2xl border transition-all ${isUnlocked
-                    ? 'bg-white dark:bg-white/5 border-white/20 hover:scale-105'
-                    : 'bg-slate-100 dark:bg-white/[0.02] border-slate-200 dark:border-white/5 opacity-60'
+                ? 'bg-white dark:bg-white/5 border-white/20 hover:scale-105'
+                : 'bg-slate-100 dark:bg-white/[0.02] border-slate-200 dark:border-white/5 opacity-60'
                 }`}
             style={isUnlocked ? { boxShadow: `0 0 20px ${tierStyle.glow}` } : {}}
         >
@@ -276,22 +268,22 @@ const TrophiesGrid: React.FC = () => {
 
 // Levels Progress
 const LevelsProgress: React.FC<{ currentXP: number }> = ({ currentXP }) => {
-    const currentLevel = getLevelFromXP(currentXP);
+    const { levelInfo } = useGamification();
 
     return (
         <div className="space-y-4">
             {LEVELS.map((level, idx) => {
                 const isUnlocked = currentXP >= level.minXP;
-                const isCurrent = level.level === currentLevel.level;
+                const isCurrent = level.level === levelInfo.level;
 
                 return (
                     <div
                         key={level.level}
                         className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${isCurrent
-                                ? 'bg-gradient-to-r from-[#38BDF8]/10 to-[#A855F7]/10 border-[#38BDF8]/30'
-                                : isUnlocked
-                                    ? 'bg-white/5 border-white/10'
-                                    : 'bg-white/[0.02] border-white/5 opacity-50'
+                            ? 'bg-gradient-to-r from-[#38BDF8]/10 to-[#A855F7]/10 border-[#38BDF8]/30'
+                            : isUnlocked
+                                ? 'bg-white/5 border-white/10'
+                                : 'bg-white/[0.02] border-white/5 opacity-50'
                             }`}
                     >
                         <div className="relative">

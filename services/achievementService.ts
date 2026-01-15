@@ -3,6 +3,7 @@ import { doc, getDoc, updateDoc, addDoc, collection, arrayUnion, serverTimestamp
 import { UserProfile, AchievementUnlock, CourseProgress } from '../types';
 import { ACHIEVEMENTS, Achievement } from '../src/data/gamification';
 import { awardXP, calculateAchievementXP } from './xpService';
+import { validateUserId, validateAchievementId } from './validation';
 
 /**
  * Context object containing user activity data for achievement evaluation
@@ -117,13 +118,19 @@ export async function checkAchievements(
     userId: string,
     context: AchievementContext
 ): Promise<Achievement[]> {
+    // Validate userId
+    if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+        console.error('Invalid user ID in checkAchievements:', userId);
+        return [];
+    }
+
     try {
         // Get user profile
         const userRef = doc(db, 'users', userId);
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
-            console.error(`User profile not found: ${userId}`);
+            console.error(`User profile not found in checkAchievements: ${userId}`);
             return [];
         }
 
@@ -138,28 +145,50 @@ export async function checkAchievements(
                 continue;
             }
 
-            // Evaluate requirement
-            const meetsRequirement = evaluateRequirement(
-                achievement.requirement,
-                context,
-                userProfile
-            );
+            try {
+                // Evaluate requirement
+                const meetsRequirement = evaluateRequirement(
+                    achievement.requirement,
+                    context,
+                    userProfile
+                );
 
-            if (meetsRequirement) {
-                // Unlock the achievement
-                await unlockAchievement(userId, achievement.id);
-                newlyUnlocked.push(achievement);
+                if (meetsRequirement) {
+                    // Unlock the achievement
+                    await unlockAchievement(userId, achievement.id);
+                    newlyUnlocked.push(achievement);
 
-                console.log(`Achievement unlocked: ${achievement.title} for user ${userId}`);
+                    console.log(`Achievement unlocked: ${achievement.title} for user ${userId}`);
+                }
+            } catch (achievementError) {
+                // Log error but continue checking other achievements
+                console.error(`Error checking achievement ${achievement.id} for user ${userId}:`, achievementError);
             }
         }
 
         return newlyUnlocked;
     } catch (error) {
-        console.error('Error checking achievements:', error);
+        console.error(`Error checking achievements for user ${userId}:`, error);
+        handleGamificationError(error as Error, 'checkAchievements');
         // Don't throw - achievement checking shouldn't break the app
         return [];
     }
+}
+
+/**
+ * Handle gamification errors with logging and user-friendly messages
+ * @param error - Error object
+ * @param context - Context where the error occurred
+ */
+function handleGamificationError(error: Error, context: string): void {
+    console.error(`Gamification error in ${context}:`, {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+    });
+
+    // In a production environment, you would log to an error tracking service
+    // Example: Sentry.captureException(error, { tags: { context } });
 }
 
 /**
@@ -172,13 +201,13 @@ export async function unlockAchievement(
     userId: string,
     achievementId: string
 ): Promise<void> {
-    try {
-        // Find the achievement
-        const achievement = ACHIEVEMENTS.find(a => a.id === achievementId);
+    // Validate inputs using centralized validation
+    validateUserId(userId);
+    validateAchievementId(achievementId);
 
-        if (!achievement) {
-            throw new Error(`Achievement not found: ${achievementId}`);
-        }
+    try {
+        // Find the achievement (already validated by validateAchievementId)
+        const achievement = ACHIEVEMENTS.find(a => a.id === achievementId)!;
 
         // Get user profile to check if already unlocked
         const userRef = doc(db, 'users', userId);
@@ -223,7 +252,8 @@ export async function unlockAchievement(
 
         console.log(`Achievement ${achievement.title} unlocked for user ${userId}, awarded ${xpAmount} XP`);
     } catch (error) {
-        console.error(`Error unlocking achievement ${achievementId}:`, error);
+        console.error(`Error unlocking achievement ${achievementId} for user ${userId}:`, error);
+        handleGamificationError(error as Error, 'unlockAchievement');
         throw error;
     }
 }
@@ -234,18 +264,28 @@ export async function unlockAchievement(
  * @returns Array of unlocked achievement IDs
  */
 export async function getUnlockedAchievements(userId: string): Promise<string[]> {
+    // Validate userId using centralized validation
+    try {
+        validateUserId(userId);
+    } catch (error) {
+        console.error('Invalid user ID in getUnlockedAchievements:', userId, error);
+        return [];
+    }
+
     try {
         const userRef = doc(db, 'users', userId);
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
+            console.warn(`User profile not found in getUnlockedAchievements: ${userId}`);
             return [];
         }
 
         const userProfile = userSnap.data() as UserProfile;
         return userProfile.unlockedAchievements || [];
     } catch (error) {
-        console.error('Error getting unlocked achievements:', error);
+        console.error(`Error getting unlocked achievements for user ${userId}:`, error);
+        handleGamificationError(error as Error, 'getUnlockedAchievements');
         return [];
     }
 }
@@ -260,11 +300,21 @@ export async function isAchievementUnlocked(
     userId: string,
     achievementId: string
 ): Promise<boolean> {
+    // Validate inputs using centralized validation
+    try {
+        validateUserId(userId);
+        validateAchievementId(achievementId);
+    } catch (error) {
+        console.error('Invalid parameters in isAchievementUnlocked:', { userId, achievementId }, error);
+        return false;
+    }
+
     try {
         const unlockedIds = await getUnlockedAchievements(userId);
         return unlockedIds.includes(achievementId);
     } catch (error) {
-        console.error('Error checking if achievement is unlocked:', error);
+        console.error(`Error checking if achievement ${achievementId} is unlocked for user ${userId}:`, error);
+        handleGamificationError(error as Error, 'isAchievementUnlocked');
         return false;
     }
 }

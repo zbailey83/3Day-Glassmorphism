@@ -3,6 +3,7 @@ import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { UserProfile, CourseProgress, Lesson } from '../types';
 import { awardXP, calculateLessonXP, XP_REWARDS } from './xpService';
 import { checkAchievements, AchievementContext } from './achievementService';
+import { validateUserId, validateCourseId, validateLessonId } from './validation';
 
 /**
  * Complete a lesson for a user
@@ -18,6 +19,11 @@ export async function completeLesson(
     lessonId: string,
     lessonType: 'video' | 'reading' | 'lab' = 'reading'
 ): Promise<void> {
+    // Validate inputs using centralized validation
+    validateUserId(userId);
+    validateCourseId(courseId);
+    validateLessonId(lessonId);
+
     try {
         // Get user profile
         const userRef = doc(db, 'users', userId);
@@ -98,7 +104,8 @@ export async function completeLesson(
 
         console.log(`Lesson completion processed successfully for user ${userId}`);
     } catch (error) {
-        console.error(`Error completing lesson ${lessonId} for user ${userId}:`, error);
+        console.error(`Error completing lesson ${lessonId} for user ${userId} in course ${courseId}:`, error);
+        handleGamificationError(error as Error, 'completeLesson');
         throw error;
     }
 }
@@ -113,6 +120,10 @@ export async function completeCourse(
     userId: string,
     courseId: string
 ): Promise<void> {
+    // Validate inputs using centralized validation
+    validateUserId(userId);
+    validateCourseId(courseId);
+
     try {
         // Get user profile
         const userRef = doc(db, 'users', userId);
@@ -178,6 +189,23 @@ export async function completeCourse(
         console.log(`Course completion processed successfully for user ${userId}`);
     } catch (error) {
         console.error(`Error completing course ${courseId} for user ${userId}:`, error);
+        handleGamificationError(error as Error, 'completeCourse');
         throw error;
     }
+}
+
+/**
+ * Handle gamification errors with logging and user-friendly messages
+ * @param error - Error object
+ * @param context - Context where the error occurred
+ */
+function handleGamificationError(error: Error, context: string): void {
+    console.error(`Gamification error in ${context}:`, {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+    });
+
+    // In a production environment, you would log to an error tracking service
+    // Example: Sentry.captureException(error, { tags: { context } });
 }

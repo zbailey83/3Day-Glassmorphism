@@ -5,7 +5,7 @@ import { ViewState } from '../App';
 import { Home, X, Sun, Moon, LogOut, Trophy, ChevronDown, ChevronRight, Terminal, Layout } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { AchievementsPanel } from './AchievementsPanel';
-import { getLevelFromXP, getXPProgress } from '../src/data/gamification';
+import { useGamification } from '../contexts/GamificationContext';
 import { Lesson } from '../types';
 
 interface SidebarProps {
@@ -20,7 +20,8 @@ interface SidebarProps {
 import logo from '../logo-blue.png';
 
 export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onCloseMobile, isDarkMode, onToggleTheme, currentLesson }) => {
-  const { user, userProfile, signInWithGoogle, logout } = useAuth();
+  const { user, signInWithGoogle, logout } = useAuth();
+  const { xp, levelInfo, xpProgress, streak } = useGamification();
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
 
   // Load collapse state from localStorage, default to collapsed
@@ -45,10 +46,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onClo
     image: { name: 'Visual Vibe Lab', icon: Layout, color: '#38BDF8' },
     // seo tool removed - not used in any course
   };
-
-  const xp = userProfile?.xp || 0;
-  const currentLevel = getLevelFromXP(xp);
-  const xpProgress = getXPProgress(xp);
 
   const navItemClass = (isActive: boolean) =>
     `flex items-center w-full px-5 py-3.5 mb-2 rounded-[14px] transition-all duration-300 group border ${isActive
@@ -173,17 +170,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onClo
             <div className="flex items-center gap-3 mb-3">
               <div className="relative">
                 <img
-                  src={currentLevel.animalSvg}
-                  alt={currentLevel.animal}
+                  src={levelInfo.animalSvg}
+                  alt={levelInfo.animal}
                   className="w-12 h-12 object-contain"
                 />
                 <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-[#38BDF8] to-[#6366F1] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                  {currentLevel.level}
+                  {levelInfo.level}
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-display font-bold text-slate-900 dark:text-white text-sm truncate">{currentLevel.title}</h3>
-                <p className="text-[10px] text-slate-500 dark:text-[#94A3B8]">{xp} XP • ⚡ {userProfile?.streakDays || 1} day streak</p>
+                <h3 className="font-display font-bold text-slate-900 dark:text-white text-sm truncate">{levelInfo.title}</h3>
+                <p className="text-[10px] text-slate-500 dark:text-[#94A3B8]">{xp} XP • ⚡ {streak || 1} day streak</p>
               </div>
               <button
                 onClick={(e: React.MouseEvent) => { e.stopPropagation(); logout(); }}

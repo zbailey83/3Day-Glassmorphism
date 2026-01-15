@@ -3,6 +3,7 @@ import { doc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp
 import { DailyChallengeProgress, UserProfile } from '../types';
 import { DAILY_CHALLENGES, DailyChallenge } from '../src/data/gamification';
 import { awardXP } from './xpService';
+import { validateUserId, validateChallengeId } from './validation';
 
 /**
  * Get today's date in YYYY-MM-DD format (UTC)
@@ -19,6 +20,18 @@ function getTodayDateString(): string {
  * @returns Array of daily challenges with completion status
  */
 export async function getDailyChallenges(userId: string): Promise<(DailyChallenge & { completed: boolean })[]> {
+    // Validate userId using centralized validation
+    try {
+        validateUserId(userId);
+    } catch (error) {
+        console.error('Invalid user ID in getDailyChallenges:', userId, error);
+        // Return challenges with all marked as incomplete on error
+        return DAILY_CHALLENGES.map(challenge => ({
+            ...challenge,
+            completed: false
+        }));
+    }
+
     try {
         const today = getTodayDateString();
 
@@ -45,7 +58,8 @@ export async function getDailyChallenges(userId: string): Promise<(DailyChalleng
 
         return challengesWithStatus;
     } catch (error) {
-        console.error('Error getting daily challenges:', error);
+        console.error(`Error getting daily challenges for user ${userId}:`, error);
+        handleGamificationError(error as Error, 'getDailyChallenges');
         // Return challenges with all marked as incomplete on error
         return DAILY_CHALLENGES.map(challenge => ({
             ...challenge,
@@ -64,6 +78,10 @@ export async function completeDailyChallenge(
     userId: string,
     challengeId: string
 ): Promise<void> {
+    // Validate inputs using centralized validation
+    validateUserId(userId);
+    validateChallengeId(challengeId);
+
     try {
         // Find the challenge
         const challenge = DAILY_CHALLENGES.find(c => c.id === challengeId);
@@ -111,6 +129,7 @@ export async function completeDailyChallenge(
         console.log(`Daily challenge ${challenge.title} completed for user ${userId}, awarded ${challenge.xpReward} XP`);
     } catch (error) {
         console.error(`Error completing daily challenge ${challengeId} for user ${userId}:`, error);
+        handleGamificationError(error as Error, 'completeDailyChallenge');
         throw error;
     }
 }
@@ -125,6 +144,15 @@ export async function isDailyChallengeCompleted(
     userId: string,
     challengeId: string
 ): Promise<boolean> {
+    // Validate inputs using centralized validation
+    try {
+        validateUserId(userId);
+        validateChallengeId(challengeId);
+    } catch (error) {
+        console.error('Invalid parameters in isDailyChallengeCompleted:', { userId, challengeId }, error);
+        return false;
+    }
+
     try {
         const today = getTodayDateString();
 
@@ -138,7 +166,8 @@ export async function isDailyChallengeCompleted(
         const progressSnap = await getDocs(progressQuery);
         return !progressSnap.empty;
     } catch (error) {
-        console.error('Error checking daily challenge completion:', error);
+        console.error(`Error checking daily challenge completion for user ${userId}, challenge ${challengeId}:`, error);
+        handleGamificationError(error as Error, 'isDailyChallengeCompleted');
         return false;
     }
 }
@@ -153,6 +182,20 @@ export async function getDailyChallengeHistory(
     userId: string,
     limit: number = 30
 ): Promise<DailyChallengeProgress[]> {
+    // Validate userId using centralized validation
+    try {
+        validateUserId(userId);
+    } catch (error) {
+        console.error('Invalid user ID in getDailyChallengeHistory:', userId, error);
+        return [];
+    }
+
+    // Validate limit
+    if (limit <= 0 || !Number.isInteger(limit)) {
+        console.warn('Invalid limit in getDailyChallengeHistory, using default:', limit);
+        limit = 30;
+    }
+
     try {
         const progressQuery = query(
             collection(db, 'dailyChallengeProgress'),
@@ -175,7 +218,24 @@ export async function getDailyChallengeHistory(
 
         return history.slice(0, limit);
     } catch (error) {
-        console.error('Error getting daily challenge history:', error);
+        console.error(`Error getting daily challenge history for user ${userId}:`, error);
+        handleGamificationError(error as Error, 'getDailyChallengeHistory');
         return [];
     }
+}
+
+/**
+ * Handle gamification errors with logging and user-friendly messages
+ * @param error - Error object
+ * @param context - Context where the error occurred
+ */
+function handleGamificationError(error: Error, context: string): void {
+    console.error(`Gamification error in ${context}:`, {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+    });
+
+    // In a production environment, you would log to an error tracking service
+    // Example: Sentry.captureException(error, { tags: { context } });
 }

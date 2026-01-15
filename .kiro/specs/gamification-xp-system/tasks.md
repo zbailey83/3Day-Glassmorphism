@@ -238,31 +238,31 @@ This implementation plan builds out the functional gamification XP system for th
     - Call notification service when streak updates
     - _Requirements: 9.2, 9.3, 9.4_
 
-- [ ] 11. Update UI components to use GamificationContext
-  - [ ] 11.1 Update Sidebar to show real-time XP
+- [x] 11. Update UI components to use GamificationContext
+  - [x] 11.1 Update Sidebar to show real-time XP
     - Import and use `useGamification` hook
     - Display current XP and level
     - Show XP progress bar
     - _Requirements: 9.1, 9.4_
 
-  - [ ] 11.2 Update AchievementsPanel to show unlocked achievements
+  - [x] 11.2 Update AchievementsPanel to show unlocked achievements
     - Use real `unlockedAchievements` from context instead of mock data
     - Update achievement cards to reflect unlock status
     - _Requirements: 9.5_
 
-  - [ ] 11.3 Update Dashboard to show daily challenges
+  - [x] 11.3 Update Dashboard to show daily challenges
     - Display available daily challenges
     - Show completion status
     - Add click handlers to complete challenges
     - _Requirements: 6.1_
 
-  - [ ] 11.4 Update CourseView to trigger lesson completions
+  - [x] 11.4 Update CourseView to trigger lesson completions
     - Call `completeLesson` when user finishes a lesson
     - Show XP gain notification
     - _Requirements: 4.1, 9.1_
 
-- [ ] 12. Implement error handling and validation
-  - [ ] 12.1 Add error handling to all service functions
+- [x] 12. Implement error handling and validation
+  - [x] 12.1 Add error handling to all service functions
     - Wrap database operations in try-catch blocks
     - Use `retryOperation` helper for transient failures
     - Log errors with context
@@ -275,7 +275,7 @@ This implementation plan builds out the functional gamification XP system for th
     - Test fallback behavior
     - _Requirements: 10.1, 10.2_
 
-  - [ ] 12.3 Add validation to all input parameters
+  - [x] 12.3 Add validation to all input parameters
     - Validate XP amounts are positive integers
     - Validate user IDs are non-empty strings
     - Validate achievement IDs exist in ACHIEVEMENTS array
@@ -287,8 +287,8 @@ This implementation plan builds out the functional gamification XP system for th
     - Test invalid achievement IDs
     - _Requirements: 1.5, 10.2, 10.3_
 
-- [ ] 13. Add level calculation utilities
-  - [ ] 13.1 Implement level progression functions
+- [-] 13. Add level calculation utilities
+  - [x] 13.1 Implement level progression functions
     - Verify `getLevelFromXP` function works correctly
     - Verify `getXPProgress` function works correctly
     - Verify `getNextLevel` function works correctly

@@ -384,23 +384,78 @@ export const LEVELS: LevelInfo[] = [
     { level: 10, title: 'Legendary Dino', minXP: 5500, maxXP: Infinity, animal: 'dinosaur', animalSvg: '/svg-assets/dinosaur-svgrepo-com.svg', perks: ['All courses', 'Exclusive Vault access', 'Legend status'] }
 ];
 
-// Helper functions
+// Memoization cache for level calculations
+const levelCache = new Map<number, LevelInfo>();
+const progressCache = new Map<number, { current: number; needed: number; percentage: number }>();
+const nextLevelCache = new Map<number, LevelInfo | null>();
+
+// Helper functions with memoization
 export const getLevelFromXP = (xp: number): LevelInfo => {
-    return LEVELS.find(l => xp >= l.minXP && xp < l.maxXP) || LEVELS[LEVELS.length - 1];
+    // Handle negative XP by treating it as 0
+    const normalizedXP = Math.max(0, xp);
+
+    // Check cache first
+    if (levelCache.has(normalizedXP)) {
+        return levelCache.get(normalizedXP)!;
+    }
+
+    // Calculate level
+    const level = LEVELS.find(l => normalizedXP >= l.minXP && normalizedXP < l.maxXP) || LEVELS[LEVELS.length - 1];
+
+    // Cache the result
+    levelCache.set(normalizedXP, level);
+
+    return level;
 };
 
 export const getXPProgress = (xp: number): { current: number; needed: number; percentage: number } => {
-    const level = getLevelFromXP(xp);
-    const current = xp - level.minXP;
+    // Handle negative XP by treating it as 0
+    const normalizedXP = Math.max(0, xp);
+
+    // Check cache first
+    if (progressCache.has(normalizedXP)) {
+        return progressCache.get(normalizedXP)!;
+    }
+
+    // Calculate progress
+    const level = getLevelFromXP(normalizedXP);
+    const current = normalizedXP - level.minXP;
     const needed = level.maxXP === Infinity ? 1000 : level.maxXP - level.minXP;
     const percentage = Math.min((current / needed) * 100, 100);
-    return { current, needed, percentage };
+
+    const result = { current, needed, percentage };
+
+    // Cache the result
+    progressCache.set(normalizedXP, result);
+
+    return result;
 };
 
 export const getNextLevel = (xp: number): LevelInfo | null => {
-    const currentLevel = getLevelFromXP(xp);
+    // Handle negative XP by treating it as 0
+    const normalizedXP = Math.max(0, xp);
+
+    // Check cache first
+    if (nextLevelCache.has(normalizedXP)) {
+        return nextLevelCache.get(normalizedXP)!;
+    }
+
+    // Calculate next level
+    const currentLevel = getLevelFromXP(normalizedXP);
     const nextIndex = LEVELS.findIndex(l => l.level === currentLevel.level) + 1;
-    return nextIndex < LEVELS.length ? LEVELS[nextIndex] : null;
+    const result = nextIndex < LEVELS.length ? LEVELS[nextIndex] : null;
+
+    // Cache the result
+    nextLevelCache.set(normalizedXP, result);
+
+    return result;
+};
+
+// Clear cache function (useful if LEVELS configuration changes)
+export const clearLevelCache = (): void => {
+    levelCache.clear();
+    progressCache.clear();
+    nextLevelCache.clear();
 };
 
 // Daily challenges for bonus XP

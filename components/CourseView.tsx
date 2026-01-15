@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Course, Module, Lesson, QuizQuestion } from '../types';
 import { CheckCircle, PlayCircle, FileText, HelpCircle, ChevronRight, AlertCircle, ArrowRight, ChevronDown, Zap } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { updateModuleProgress, addXP } from '../services/firebase';
+import { updateModuleProgress } from '../services/firebase';
 import { COURSE_MASCOTS } from '../src/data/gamification';
 import { EmbeddedTool } from './EmbeddedTool';
 import { ToolLaunchButton } from './ToolLaunchButton';
+import { useGamification } from '../contexts/GamificationContext';
 
 // Tool mention patterns to detect in lesson content
 const TOOL_PATTERNS = [
@@ -109,12 +110,12 @@ interface CourseViewProps {
 
 export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId, onLessonChange }) => {
   const { user } = useAuth();
+  const { completeLesson: completeLessonGamification } = useGamification();
   // Flatten all lessons to find the first one easily
   const allLessons = course.modules.flatMap(m => m.lessons);
   const [activeLesson, setActiveLesson] = useState<Lesson>(allLessons[0]);
   const [expandedModules, setExpandedModules] = useState<string[]>(course.modules.map(m => m.id));
   const [isChanging, setIsChanging] = useState(false);
-  const [xpEarned, setXpEarned] = useState<number | null>(null);
 
   const mascot = COURSE_MASCOTS[course.id as keyof typeof COURSE_MASCOTS];
 
@@ -158,20 +159,16 @@ export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId,
       const contentArea = document.getElementById('lesson-content-area');
       if (contentArea) contentArea.scrollTop = 0;
 
-      // Mark as "Started" or "Viewed" in backend could happen here
+      // Mark lesson as completed and award XP through gamification context
       if (user) {
         // Find parent module of this lesson
         const parentModule = course.modules.find(m => m.lessons.some(l => l.id === lesson.id));
         if (parentModule) {
-          // We are tracking progress by Lesson ID now basically, but the backend function is named updateModuleProgress. 
-          // Let's reuse it but pass lesson ID as the "moduleId" argument, assuming the backend just stores strings.
+          // Update module progress for tracking
           updateModuleProgress(user.uid, course.id, lesson.id);
 
-          // Award XP for viewing a new lesson
-          const xpAmount = lesson.type === 'lab' ? 30 : lesson.type === 'video' ? 20 : 15;
-          addXP(user.uid, xpAmount);
-          setXpEarned(xpAmount);
-          setTimeout(() => setXpEarned(null), 2000);
+          // Complete lesson through gamification context (awards XP and checks achievements)
+          completeLessonGamification(course.id, lesson.id, lesson.type);
         }
       }
     }, 200);
@@ -181,16 +178,6 @@ export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId,
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)] animate-slide-up">
-      {/* XP Earned Notification */}
-      {xpEarned && (
-        <div className="fixed top-24 right-8 z-50 animate-bounce">
-          <div className="bg-gradient-to-r from-[#F59E0B] to-[#EAB308] text-white px-4 py-2 rounded-full font-bold flex items-center gap-2 shadow-lg shadow-[#F59E0B]/30">
-            <Zap size={18} fill="currentColor" />
-            +{xpEarned} XP
-          </div>
-        </div>
-      )}
-
       {/* Content Area */}
       <div id="lesson-content-area" className="flex-1 glass-panel rounded-[24px] overflow-y-auto p-8 md:p-10 relative scroll-smooth flex flex-col">
         <div className={`max-w-3xl mx-auto w-full transition-opacity duration-200 ${isChanging ? 'opacity-0' : 'opacity-100'}`}>
@@ -323,15 +310,15 @@ export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId,
 const QuizItem: React.FC<{ question: QuizQuestion; index: number; onCorrectAnswer?: () => void }> = ({ question, index, onCorrectAnswer }) => {
   const [selected, setSelected] = useState<number | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const { user } = useAuth();
+  const { awardXP } = useGamification();
 
   const isCorrect = selected === question.correctAnswer;
 
   const handleSubmit = () => {
     setIsSubmitted(true);
-    if (selected === question.correctAnswer && user) {
-      // Award XP for correct quiz answer
-      addXP(user.uid, 25);
+    if (selected === question.correctAnswer) {
+      // Award XP for correct quiz answer through gamification context
+      awardXP(25, 'Correct quiz answer');
       onCorrectAnswer?.();
     }
   };
