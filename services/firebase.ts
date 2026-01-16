@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, serverTimestamp, arrayRemove, arrayUnion, documentId } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, serverTimestamp, arrayRemove, arrayUnion, documentId, enableIndexedDbPersistence, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAnalytics } from 'firebase/analytics';
 import { UserProfile } from '../types';
@@ -28,33 +28,135 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const analytics = getAnalytics(app);
 
+// Enable offline persistence for Firestore
+enableIndexedDbPersistence(db, {
+    cacheSizeBytes: CACHE_SIZE_UNLIMITED
+}).catch((err) => {
+    if (err.code === 'failed-precondition') {
+        console.warn('Firestore persistence failed: Multiple tabs open');
+    } else if (err.code === 'unimplemented') {
+        console.warn('Firestore persistence not available in this browser');
+    } else {
+        console.error('Firestore persistence error:', err);
+    }
+});
+
+// Wait for Firestore to connect
+import { waitForPendingWrites, onSnapshot } from 'firebase/firestore';
+
+let firestoreReady = false;
+const firestoreReadyPromise = new Promise<void>((resolve) => {
+    // Test connection by listening to a dummy document
+    const testRef = doc(db, '_connection_test_', 'test');
+    const unsubscribe = onSnapshot(testRef,
+        () => {
+            if (!firestoreReady) {
+                firestoreReady = true;
+                console.log('✅ Firestore connected and ready');
+                resolve();
+            }
+            unsubscribe();
+        },
+        (error) => {
+            console.error('❌ Firestore connection test failed:', error);
+            // Resolve anyway after a timeout to prevent hanging
+            setTimeout(() => {
+                console.warn('⚠️ Firestore connection timeout - proceeding anyway');
+                firestoreReady = true;
+                resolve();
+            }, 3000);
+            unsubscribe();
+        }
+    );
+});
+
+console.log('Firestore initialized with offline persistence');
+
+// Export connection status checker and promise
+export const isFirestoreReady = () => firestoreReady;
+export const waitForFirestore = () => firestoreReadyPromise;
+
 // Helper to create/update user profile on login
-export const syncUserProfile = async (user: any) => {
+export const syncUserProfile = async (user: any, retries = 3) => {
     if (!user) return;
 
-    const userRef = doc(db, 'users', user.uid);
-    const userSnap = await getDoc(userRef);
+    // Wait for Firestore to be ready before attempting operations
+    await waitForFirestore();
+    console.log('[Firebase] Firestore ready, syncing user profile...');
 
-    if (!userSnap.exists()) {
-        const newProfile: UserProfile = {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            xp: 0,
-            level: 1,
-            streakDays: 1,
-            lastLogin: serverTimestamp(),
-            enrolledCourses: [],
-            courseProgress: [],
-            savedProjects: [],
-            likedProjects: []
-        };
-        await setDoc(userRef, newProfile);
-    } else {
-        await updateDoc(userRef, {
-            lastLogin: serverTimestamp()
-        });
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            const userRef = doc(db, 'users', user.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (!userSnap.exists()) {
+                // New user - create full profile
+                const newProfile: UserProfile = {
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL,
+                    xp: 0,
+                    level: 1,
+                    streakDays: 1,
+                    lastLogin: serverTimestamp(),
+                    unlockedAchievements: [],
+                    enrolledCourses: [],
+                    courseProgress: [],
+                    savedProjects: [],
+                    likedProjects: []
+                };
+                await setDoc(userRef, newProfile);
+                console.log('[Firebase] ✅ Created new user profile with gamification fields');
+                return; // Success
+            } else {
+                // Existing user - check if gamification fields exist and initialize if missing
+                const userData = userSnap.data() as UserProfile;
+                const updates: any = {
+                    lastLogin: serverTimestamp()
+                };
+
+                // Initialize missing gamification fields for existing users
+                if (userData.xp === undefined) {
+                    updates.xp = 0;
+                    console.log('[Firebase] Initializing XP field for existing user');
+                }
+                if (userData.level === undefined) {
+                    updates.level = 1;
+                    console.log('[Firebase] Initializing level field for existing user');
+                }
+                if (userData.unlockedAchievements === undefined) {
+                    updates.unlockedAchievements = [];
+                    console.log('[Firebase] Initializing unlockedAchievements field for existing user');
+                }
+                if (userData.streakDays === undefined) {
+                    updates.streakDays = 1;
+                    console.log('[Firebase] Initializing streakDays field for existing user');
+                }
+
+                await updateDoc(userRef, updates);
+
+                if (Object.keys(updates).length > 1) { // More than just lastLogin
+                    console.log('[Firebase] ✅ Updated existing user profile with missing gamification fields');
+                } else {
+                    console.log('[Firebase] ✅ User profile synced');
+                }
+                return; // Success
+            }
+        } catch (error: any) {
+            console.error(`[Firebase] Profile sync attempt ${attempt}/${retries} failed:`, error);
+
+            if (attempt < retries) {
+                // Wait before retrying (exponential backoff)
+                const delay = 1000 * attempt;
+                console.log(`[Firebase] Retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            } else {
+                // All retries failed
+                console.error('[Firebase] ❌ Profile sync failed after all retries');
+                throw error;
+            }
+        }
     }
 };
 

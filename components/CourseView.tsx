@@ -158,20 +158,35 @@ export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId,
       // Scroll top of content
       const contentArea = document.getElementById('lesson-content-area');
       if (contentArea) contentArea.scrollTop = 0;
-
-      // Mark lesson as completed and award XP through gamification context
-      if (user) {
-        // Find parent module of this lesson
-        const parentModule = course.modules.find(m => m.lessons.some(l => l.id === lesson.id));
-        if (parentModule) {
-          // Update module progress for tracking
-          updateModuleProgress(user.uid, course.id, lesson.id);
-
-          // Complete lesson through gamification context (awards XP and checks achievements)
-          completeLessonGamification(course.id, lesson.id, lesson.type);
-        }
-      }
     }, 200);
+  };
+
+  const handleCompleteLesson = (lesson: Lesson) => {
+    if (!user) {
+      console.error('[CourseView] Cannot complete lesson: No user logged in');
+      return;
+    }
+
+    console.log('[CourseView] Completing lesson:', {
+      courseId: course.id,
+      lessonId: lesson.id,
+      lessonType: lesson.type,
+      userId: user.uid
+    });
+
+    // Find parent module of this lesson
+    const parentModule = course.modules.find(m => m.lessons.some(l => l.id === lesson.id));
+    if (parentModule) {
+      // Update module progress for tracking
+      updateModuleProgress(user.uid, course.id, lesson.id);
+
+      // Complete lesson through gamification context (awards XP and checks achievements)
+      completeLessonGamification(course.id, lesson.id, lesson.type);
+
+      console.log('[CourseView] Lesson completion triggered successfully');
+    } else {
+      console.error('[CourseView] Could not find parent module for lesson:', lesson.id);
+    }
   };
 
   const currentModule = course.modules.find(m => m.lessons.some(l => l.id === activeLesson.id));
@@ -202,6 +217,19 @@ export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId,
             {parseContentWithToolButtons(activeLesson.content, activeLesson.id, course.id)}
           </div>
 
+          {/* Mark as Complete Button (for non-quiz lessons) */}
+          {!activeLesson.quiz && activeLesson.type !== 'lab' && (
+            <div className="flex justify-center mb-8">
+              <button
+                onClick={() => handleCompleteLesson(activeLesson)}
+                className="glass-button text-sm font-bold text-white px-8 py-3 rounded-full hover:scale-105 transition-all shadow-[0_0_20px_rgba(56,189,248,0.4)] flex items-center gap-2"
+              >
+                <CheckCircle size={18} />
+                Mark Lesson as Complete
+              </button>
+            </div>
+          )}
+
           {/* Quiz Section */}
           {activeLesson.quiz && (
             <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-[24px] p-8 mt-12 animate-fade-in backdrop-blur-sm">
@@ -212,8 +240,23 @@ export const CourseView: React.FC<CourseViewProps> = ({ course, initialModuleId,
                 <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white">Knowledge Check</h3>
               </div>
               {activeLesson.quiz.map((q, idx) => (
-                <QuizItem key={q.id} question={q} index={idx} />
+                <QuizItem
+                  key={q.id}
+                  question={q}
+                  index={idx}
+                />
               ))}
+
+              {/* Complete Lesson Button after quiz */}
+              <div className="flex justify-center mt-8 pt-6 border-t border-slate-200 dark:border-white/10">
+                <button
+                  onClick={() => handleCompleteLesson(activeLesson)}
+                  className="glass-button text-sm font-bold text-white px-8 py-3 rounded-full hover:scale-105 transition-all shadow-[0_0_20px_rgba(56,189,248,0.4)] flex items-center gap-2"
+                >
+                  <CheckCircle size={18} />
+                  Complete Lesson & Earn XP
+                </button>
+              </div>
             </div>
           )}
 

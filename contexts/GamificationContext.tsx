@@ -171,6 +171,7 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
     // Flush XP queue - batch all pending XP awards into a single database write
     const flushXPQueue = useCallback(async () => {
         if (!userId || xpQueueRef.current.length === 0) {
+            console.log('[GamificationContext] Skipping XP flush:', { userId, queueLength: xpQueueRef.current.length });
             return;
         }
 
@@ -185,17 +186,24 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
             ? queueCopy[0].reason
             : `Batch award: ${queueCopy.map(item => `${item.amount} XP (${item.reason})`).join(', ')}`;
 
+        console.log('[GamificationContext] Flushing XP queue:', {
+            userId,
+            totalXP,
+            queueLength: queueCopy.length,
+            combinedReason
+        });
+
         try {
             // Award the batched XP in a single database write
             await awardXPService(userId, totalXP, combinedReason);
-            console.log(`Flushed XP queue: ${totalXP} XP from ${queueCopy.length} awards`);
+            console.log(`[GamificationContext] ✅ Flushed XP queue: ${totalXP} XP from ${queueCopy.length} awards`);
 
             // Show individual notifications for each award
             queueCopy.forEach(item => {
                 showXPGain(item.amount, item.reason);
             });
         } catch (error) {
-            console.error('Error flushing XP queue:', error);
+            console.error('[GamificationContext] ❌ Error flushing XP queue:', error);
             // Re-queue failed awards
             xpQueueRef.current.unshift(...queueCopy);
         }
@@ -226,9 +234,11 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
     // Action methods (to be implemented in task 7.3)
     const awardXP = useCallback(async (amount: number, reason: string) => {
         if (!userId) {
-            console.error('Cannot award XP: No user logged in');
+            console.error('[GamificationContext] Cannot award XP: No user logged in');
             return;
         }
+
+        console.log('[GamificationContext] Queueing XP award:', { userId, amount, reason });
 
         // Add to queue instead of immediate database write
         xpQueueRef.current.push({ amount, reason });
@@ -240,11 +250,12 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
 
         // Set new timer to flush queue after debounce delay
         xpDebounceTimerRef.current = setTimeout(() => {
+            console.log('[GamificationContext] Debounce timer triggered, flushing queue...');
             flushXPQueue();
             xpDebounceTimerRef.current = null;
         }, XP_DEBOUNCE_DELAY);
 
-        console.log(`Queued ${amount} XP for: ${reason} (queue size: ${xpQueueRef.current.length})`);
+        console.log(`[GamificationContext] Queued ${amount} XP for: ${reason} (queue size: ${xpQueueRef.current.length})`);
     }, [userId, flushXPQueue]);
 
     const completeLesson = useCallback(async (
@@ -253,15 +264,17 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
         lessonType: 'video' | 'reading' | 'lab' = 'reading'
     ) => {
         if (!userId) {
-            console.error('Cannot complete lesson: No user logged in');
+            console.error('[GamificationContext] Cannot complete lesson: No user logged in');
             return;
         }
 
+        console.log('[GamificationContext] Completing lesson:', { userId, courseId, lessonId, lessonType });
+
         try {
             await completeLessonService(userId, courseId, lessonId, lessonType);
-            console.log(`Completed lesson ${lessonId} in course ${courseId}`);
+            console.log('[GamificationContext] Lesson completed successfully:', lessonId);
         } catch (error) {
-            console.error('Error completing lesson:', error);
+            console.error('[GamificationContext] Error completing lesson:', error);
         }
     }, [userId]);
 
@@ -367,9 +380,29 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
         const userRef = doc(db, 'users', userId);
         const unsubscribe = onSnapshot(
             userRef,
-            (docSnapshot) => {
+            async (docSnapshot) => {
                 if (docSnapshot.exists()) {
                     const userProfile = docSnapshot.data() as UserProfile;
+
+                    // Migration: Initialize missing gamification fields for existing users
+                    if (userProfile.xp === undefined || userProfile.level === undefined) {
+                        console.log('[GamificationContext] Migrating existing user profile - initializing gamification fields');
+                        try {
+                            const { updateDoc } = await import('firebase/firestore');
+                            const updates: any = {};
+
+                            if (userProfile.xp === undefined) updates.xp = 0;
+                            if (userProfile.level === undefined) updates.level = 1;
+                            if (userProfile.unlockedAchievements === undefined) updates.unlockedAchievements = [];
+                            if (userProfile.streakDays === undefined) updates.streakDays = 1;
+
+                            await updateDoc(userRef, updates);
+                            console.log('[GamificationContext] Migration complete - gamification fields initialized');
+                            return; // Let the next snapshot handle the updated data
+                        } catch (error) {
+                            console.error('[GamificationContext] Migration failed:', error);
+                        }
+                    }
 
                     // Update context state with new profile data
                     dispatch({ type: 'SET_PROFILE', payload: userProfile });
