@@ -6,6 +6,7 @@ import { Home, X, Sun, Moon, LogOut, Trophy, ChevronDown, ChevronRight, Terminal
 import { useAuth } from '../hooks/useAuth';
 import { AchievementsPanel } from './AchievementsPanel';
 import { useGamification } from '../contexts/GamificationContext';
+import { getLocalXP } from '../services/localStorageXP';
 import { Lesson } from '../types';
 
 interface SidebarProps {
@@ -23,6 +24,39 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onClo
   const { user, signInWithGoogle, logout } = useAuth();
   const { xp, levelInfo, xpProgress, streak } = useGamification();
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
+
+  // Fallback to localStorage if Firestore data is not available
+  const [localXP, setLocalXP] = useState(xp);
+  const [localLevel, setLocalLevel] = useState(levelInfo);
+  const [localStreak, setLocalStreak] = useState(streak);
+
+  useEffect(() => {
+    if (user && xp === 0) {
+      // Try to load from localStorage as fallback
+      const localData = getLocalXP(user.uid);
+      if (localData.xp > 0) {
+        console.log('[Sidebar] Loading XP from localStorage:', localData);
+        setLocalXP(localData.xp);
+
+        // Import getLevelFromXP to calculate level info
+        import('../src/data/gamification').then(({ getLevelFromXP }) => {
+          setLocalLevel(getLevelFromXP(localData.xp));
+        });
+
+        setLocalStreak(localData.streak);
+      }
+    } else {
+      // Use Firestore data when available
+      setLocalXP(xp);
+      setLocalLevel(levelInfo);
+      setLocalStreak(streak);
+    }
+  }, [user, xp, levelInfo, streak]);
+
+  // Use local values for display
+  const displayXP = localXP;
+  const displayLevel = localLevel;
+  const displayStreak = localStreak;
 
   // Load collapse state from localStorage, default to collapsed
   const [isToolsCollapsed, setIsToolsCollapsed] = useState(() => {
@@ -170,17 +204,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onClo
             <div className="flex items-center gap-3 mb-3">
               <div className="relative">
                 <img
-                  src={levelInfo.animalSvg}
-                  alt={levelInfo.animal}
+                  src={displayLevel.animalSvg}
+                  alt={displayLevel.animal}
                   className="w-12 h-12 object-contain"
                 />
                 <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-[#38BDF8] to-[#6366F1] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                  {levelInfo.level}
+                  {displayLevel.level}
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-display font-bold text-slate-900 dark:text-white text-sm truncate">{levelInfo.title}</h3>
-                <p className="text-[10px] text-slate-500 dark:text-[#94A3B8]">{xp} XP • ⚡ {streak || 1} day streak</p>
+                <h3 className="font-display font-bold text-slate-900 dark:text-white text-sm truncate">{displayLevel.title}</h3>
+                <p className="text-[10px] text-slate-500 dark:text-[#94A3B8]">{displayXP} XP • ⚡ {displayStreak || 1} day streak</p>
               </div>
               <button
                 onClick={(e: React.MouseEvent) => { e.stopPropagation(); logout(); }}

@@ -10,6 +10,7 @@ import { updateStreak as updateStreakService } from '../services/streakService';
 import { getDailyChallenges, completeDailyChallenge as completeDailyChallengeService } from '../services/dailyChallengeService';
 import { DailyChallenge } from '../src/data/gamification';
 import { showXPGain, showLevelUp, showAchievementUnlock, showStreakUpdate } from '../services/notificationService';
+import { getLocalXP, awardLocalXP, completeLocalLesson, syncToFirestore } from '../services/localStorageXP';
 
 // XP award queue item
 interface XPAwardQueueItem {
@@ -168,6 +169,10 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
     const xpQueueRef = useRef<XPAwardQueueItem[]>([]);
     const xpDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Firestore connection state
+    const useLocalStorageRef = useRef(false);
+    const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
     // Flush XP queue - batch all pending XP awards into a single database write
     const flushXPQueue = useCallback(async () => {
         if (!userId || xpQueueRef.current.length === 0) {
@@ -194,18 +199,32 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
         });
 
         try {
-            // Award the batched XP in a single database write
+            // Try Firestore first
             await awardXPService(userId, totalXP, combinedReason);
-            console.log(`[GamificationContext] ✅ Flushed XP queue: ${totalXP} XP from ${queueCopy.length} awards`);
+            console.log(`[GamificationContext] ✅ Flushed XP queue to Firestore: ${totalXP} XP from ${queueCopy.length} awards`);
+            useLocalStorageRef.current = false;
 
             // Show individual notifications for each award
             queueCopy.forEach(item => {
                 showXPGain(item.amount, item.reason);
             });
-        } catch (error) {
-            console.error('[GamificationContext] ❌ Error flushing XP queue:', error);
-            // Re-queue failed awards
-            xpQueueRef.current.unshift(...queueCopy);
+        } catch (error: any) {
+            console.error('[GamificationContext] ❌ Firestore flush failed, using localStorage:', error);
+
+            // Fallback to localStorage
+            useLocalStorageRef.current = true;
+            const localData = awardLocalXP(userId, totalXP, combinedReason);
+
+            // Update local state immediately
+            dispatch({ type: 'UPDATE_XP', payload: localData.xp });
+            dispatch({ type: 'UPDATE_LEVEL', payload: localData.level });
+
+            console.log(`[GamificationContext] ✅ Flushed XP queue to localStorage: ${totalXP} XP`);
+
+            // Show notifications
+            queueCopy.forEach(item => {
+                showXPGain(item.amount, item.reason);
+            });
         }
     }, [userId]);
 
@@ -217,8 +236,36 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
                 // Flush any remaining XP awards
                 flushXPQueue();
             }
+            if (syncIntervalRef.current) {
+                clearInterval(syncIntervalRef.current);
+            }
         };
     }, [flushXPQueue]);
+
+    // Periodic sync from localStorage to Firestore
+    useEffect(() => {
+        if (!userId) return;
+
+        // Try to sync every 30 seconds if using localStorage
+        syncIntervalRef.current = setInterval(async () => {
+            if (useLocalStorageRef.current) {
+                console.log('[GamificationContext] Attempting periodic sync to Firestore...');
+                try {
+                    await syncToFirestore(userId);
+                    useLocalStorageRef.current = false;
+                    console.log('[GamificationContext] ✅ Periodic sync successful, back to Firestore mode');
+                } catch (error) {
+                    console.log('[GamificationContext] Periodic sync failed, staying in localStorage mode');
+                }
+            }
+        }, 30000); // 30 seconds
+
+        return () => {
+            if (syncIntervalRef.current) {
+                clearInterval(syncIntervalRef.current);
+            }
+        };
+    }, [userId]);
 
     // Notification functions integrated with notification service
     const showLevelUpNotification = useCallback((newLevel: LevelInfo) => {
@@ -271,10 +318,28 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
         console.log('[GamificationContext] Completing lesson:', { userId, courseId, lessonId, lessonType });
 
         try {
+            // Try Firestore first
             await completeLessonService(userId, courseId, lessonId, lessonType);
-            console.log('[GamificationContext] Lesson completed successfully:', lessonId);
-        } catch (error) {
-            console.error('[GamificationContext] Error completing lesson:', error);
+            console.log('[GamificationContext] Lesson completed successfully in Firestore:', lessonId);
+            useLocalStorageRef.current = false;
+        } catch (error: any) {
+            console.error('[GamificationContext] Firestore lesson completion failed, using localStorage:', error);
+
+            // Fallback to localStorage
+            useLocalStorageRef.current = true;
+
+            // Calculate XP based on lesson type
+            const xpAmount = lessonType === 'video' ? 10 : lessonType === 'lab' ? 30 : 15;
+            const localData = completeLocalLesson(userId, courseId, lessonId, xpAmount);
+
+            // Update local state immediately
+            dispatch({ type: 'UPDATE_XP', payload: localData.xp });
+            dispatch({ type: 'UPDATE_LEVEL', payload: localData.level });
+
+            // Show XP notification
+            showXPGain(xpAmount, `Completed ${lessonType} lesson`);
+
+            console.log('[GamificationContext] ✅ Lesson completed in localStorage:', lessonId);
         }
     }, [userId]);
 
@@ -376,6 +441,20 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
 
         dispatch({ type: 'SET_LOADING', payload: true });
 
+        // Load from localStorage immediately as fallback
+        const localData = getLocalXP(userId);
+        if (localData.xp > 0) {
+            console.log('[GamificationContext] Loading from localStorage while connecting to Firestore...');
+            dispatch({
+                type: 'SET_PROFILE', payload: {
+                    xp: localData.xp,
+                    level: localData.level,
+                    streakDays: localData.streak,
+                    unlockedAchievements: localData.unlockedAchievements
+                } as UserProfile
+            });
+        }
+
         // Subscribe to user profile document
         const userRef = doc(db, 'users', userId);
         const unsubscribe = onSnapshot(
@@ -406,6 +485,7 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
 
                     // Update context state with new profile data
                     dispatch({ type: 'SET_PROFILE', payload: userProfile });
+                    useLocalStorageRef.current = false; // Successfully connected to Firestore
 
                     // Check for level up
                     const newLevelInfo = getLevelFromXP(userProfile.xp);
@@ -414,7 +494,7 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
                         showLevelUpNotification(newLevelInfo);
                     }
 
-                    console.log('Gamification profile updated:', {
+                    console.log('Gamification profile updated from Firestore:', {
                         xp: userProfile.xp,
                         level: userProfile.level,
                         streak: userProfile.streakDays,
@@ -423,10 +503,12 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode; userId:
                 } else {
                     console.error('User profile document does not exist');
                     dispatch({ type: 'SET_LOADING', payload: false });
+                    useLocalStorageRef.current = true; // Fall back to localStorage
                 }
             },
             (error) => {
-                console.error('Error listening to user profile:', error);
+                console.error('Error listening to user profile, falling back to localStorage:', error);
+                useLocalStorageRef.current = true;
                 dispatch({ type: 'SET_LOADING', payload: false });
             }
         );

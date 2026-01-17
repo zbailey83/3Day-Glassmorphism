@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Initialize User Profile - Vibe Dev</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0F172A;
+            color: #F9FAFB;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+        }
+
+        h1 {
+            color: #38BDF8;
+            margin-top: 0;
+        }
+
+        button {
+            background: linear-gradient(to right, #38BDF8, #6366F1);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .success {
+            color: #10B981;
+        }
+
+        .error {
+            color: #EF4444;
+        }
+
+        .info {
+            color: #38BDF8;
+        }
+
+        .warning {
+            color: #F59E0B;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎮 Initialize Gamification Profile</h1>
+        <p>This tool will initialize your user profile with gamification fields (XP, level, achievements, etc.)</p>
+
+        <div>
+            <button id="loginBtn" onclick="login()">1. Login with Google</button>
+            <button id="initBtn" onclick="initProfile()" disabled>2. Initialize Profile</button>
+            <button id="checkBtn" onclick="checkProfile()" disabled>3. Check Profile</button>
+        </div>
+
+        <div id="log" class="log"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBmFMwY-bQIhc_XgXAt17JAfkjy1Y_Dbo",
+            authDomain: "vibe-dev-26.firebaseapp.com",
+            projectId: "vibe-dev-26",
+            storageBucket: "vibe-dev-26.firebasestorage.app",
+            messagingSenderId: "477890661542",
+            appId: "1:477890661542:web:f3fe0f3d08f12fd0e13867",
+            measurementId: "G-6D2H25W7B5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        window.login = async function () {
+            try {
+                log('Signing in with Google...', 'info');
+                const result = await signInWithPopup(auth, provider);
+                currentUser = result.user;
+                log(`✅ Signed in as: ${currentUser.email}`, 'success');
+                log(`User ID: ${currentUser.uid}`, 'info');
+
+                document.getElementById('loginBtn').disabled = true;
+                document.getElementById('initBtn').disabled = false;
+                document.getElementById('checkBtn').disabled = false;
+            } catch (error) {
+                log(`❌ Login failed: ${error.message}`, 'error');
+            }
+        };
+
+        window.checkProfile = async function () {
+            if (!currentUser) {
+                log('❌ Please login first', 'error');
+                return;
+            }
+
+            try {
+                log('Checking user profile...', 'info');
+                const userRef = doc(db, 'users', currentUser.uid);
+                const userSnap = await getDoc(userRef);
+
+                if (!userSnap.exists()) {
+                    log('⚠️ User profile does not exist!', 'warning');
+                    log('Click "Initialize Profile" to create it', 'info');
+                    return;
+                }
+
+                const userData = userSnap.data();
+                log('✅ User profile found:', 'success');
+                log(`  - XP: ${userData.xp ?? 'MISSING'}`, userData.xp !== undefined ? 'success' : 'error');
+                log(`  - Level: ${userData.level ?? 'MISSING'}`, userData.level !== undefined ? 'success' : 'error');
+                log(`  - Streak: ${userData.streakDays ?? 'MISSING'}`, userData.streakDays !== undefined ? 'success' : 'error');
+                log(`  - Achievements: ${userData.unlockedAchievements?.length ?? 'MISSING'}`, userData.unlockedAchievements !== undefined ? 'success' : 'error');
+
+                const missingFields = [];
+                if (userData.xp === undefined) missingFields.push('xp');
+                if (userData.level === undefined) missingFields.push('level');
+                if (userData.streakDays === undefined) missingFields.push('streakDays');
+                if (userData.unlockedAchievements === undefined) missingFields.push('unlockedAchievements');
+
+                if (missingFields.length > 0) {
+                    log(`⚠️ Missing fields: ${missingFields.join(', ')}`, 'warning');
+                    log('Click "Initialize Profile" to add them', 'info');
+                } else {
+                    log('✅ All gamification fields present!', 'success');
+                }
+            } catch (error) {
+                log(`❌ Error checking profile: ${error.message}`, 'error');
+            }
+        };
+
+        window.initProfile = async function () {
+            if (!currentUser) {
+                log('❌ Please login first', 'error');
+                return;
+            }
+
+            try {
+                log('Initializing gamification profile...', 'info');
+                const userRef = doc(db, 'users', currentUser.uid);
+
+                const profileData = {
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    displayName: currentUser.displayName,
+                    photoURL: currentUser.photoURL,
+                    xp: 0,
+                    level: 1,
+                    streakDays: 1,
+                    lastLogin: serverTimestamp(),
+                    unlockedAchievements: [],
+                    enrolledCourses: [],
+                    courseProgress: [],
+                    savedProjects: [],
+                    likedProjects: []
+                };
+
+                await setDoc(userRef, profileData, { merge: true });
+
+                log('✅ Profile initialized successfully!', 'success');
+                log('Fields added:', 'info');
+                log('  - xp: 0', 'success');
+                log('  - level: 1', 'success');
+                log('  - streakDays: 1', 'success');
+                log('  - unlockedAchievements: []', 'success');
+                log('', 'info');
+                log('🎉 You can now close this page and refresh your app!', 'success');
+
+                // Auto-check profile after init
+                setTimeout(() => checkProfile(), 1000);
+            } catch (error) {
+                log(`❌ Error initializing profile: ${error.message}`, 'error');
+                log(`Error code: ${error.code}`, 'error');
+
+                if (error.code === 'permission-denied') {
+                    log('⚠️ Permission denied - Firestore rules may need to be deployed', 'warning');
+                    log('Run: firebase deploy --only firestore:rules', 'info');
+                }
+            }
+        };
+
+        // Auto-check auth state
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                log(`Already signed in as: ${user.email}`, 'success');
+                document.getElementById('loginBtn').disabled = true;
+                document.getElementById('initBtn').disabled = false;
+                document.getElementById('checkBtn').disabled = false;
+            }
+        });
+
+        log('Ready! Click "Login with Google" to start', 'info');
+    </script>
+</body>
+
+</html>
